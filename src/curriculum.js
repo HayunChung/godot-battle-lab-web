@@ -1,3 +1,4 @@
+import {duelModule} from './duel-lessons.js';
 import {gameFlow} from './game-flow-lessons.js';
 import {workshop} from './workshop.js';
 // All key names are stable because progress is stored against lesson and step IDs.
@@ -231,4 +232,5 @@ export const modules = [
   },
   workshop,
   gameFlow,
+  duelModule,
 ];

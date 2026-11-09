@@ -1,6 +1,8 @@
+import {duelShots} from './duel-lessons.js';
 import {gameFlowShots} from './game-flow-lessons.js';
 // Each caption points to a visible detail in the captured editor, game, or browser lab.
 export const lessonShots = {
+  ...duelShots,
   ...gameFlowShots,
   'editor-tour': {
     projects: ['setup/create-project', 'Godot Project Manager · Choose Compatibility when creating your working project.'],

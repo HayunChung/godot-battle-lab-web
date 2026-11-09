@@ -1,8 +1,10 @@
+import {duelReadings} from './duel-lessons.js';
 import {gameFlowReadings} from './game-flow-lessons.js';
 // Scene and import settings below can be inspected in Godot. GDScript entries are executable lines.
 const line = (code, meaning) => ({ code, meaning });
 
 export const lessonReadings = {
+  ...duelReadings,
   ...gameFlowReadings,
   'editor-tour': {
     file: 'res://scenes/arena.tscn',

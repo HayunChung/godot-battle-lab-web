@@ -139,7 +139,7 @@ async function pairDevice(join){
     if(join&&!token)throw Error('This link is incomplete.');
     personalLink=await sync.connect(token);
     if(join && route().section==='pair'){
-      history.replaceState(null,'',state.last?'#/lesson/'+state.last:'#/');
+      history.replaceState(null,'',location.pathname+location.search+(state.last?'#/lesson/'+state.last:'#/'));
       skipVisit=true;
     }
   }catch(err){syncError=err instanceof TypeError?'Could not connect. Check your connection and retry.':err.message;}
@@ -156,6 +156,11 @@ function render(){
  const changed=key!==routeKey;routeKey=key;
  document.title=(r.lesson?.title||({dashboard:'Dashboard',devices:'Sync progress',pair:'Resume on this device',resources:'Resource library',complete:'Course progress',setup:'First setup','own-project':'Use my project',character:'My Blender character',attack:'Attack animation',reactions:'Hit and death','enemy-attack':'Enemy weapon timing',roll:'Dodge roll',stamina:'Roll stamina','shared-budget':'Shared stamina'}[r.section]))+' · Battle Lab';
  app.innerHTML=sidebar(r)+`<button class="scrim ${drawer?'visible':''}" aria-label="Close menu" data-action="menu"></button><main id="content" tabindex="-1">${topbar(r)}${storageWorks?'':'<p class="storage-warning">Progress is available for this session only. Browser storage is unavailable.</p>'}${r.lesson?lessonScreen(r.lesson):['devices','pair'].includes(r.section)?devicePage(r.section==='pair'):r.section==='shared-budget'?sharedStaminaGuide():r.section==='stamina'?staminaGuide():r.section==='roll'?rollGuide():r.section==='enemy-attack'?enemyAttackGuide():r.section==='reactions'?reactionsGuide():r.section==='attack'?attackGuide():r.section==='character'?characterGuide():['setup','own-project'].includes(r.section)?setupGuide(r.section==='own-project'):r.section==='resources'?resources():r.section==='complete'?complete():dashboard()}</main>`;
+ // A base URL keeps assets relative to the course root at the alternate entry.
+ // Fragment links must stay on the document that owns this learning session.
+ if(document.querySelector('base')){
+   for(const link of document.querySelectorAll('a[href^="#"]'))link.href=location.pathname+location.search+link.getAttribute('href');
+ }
  const wordResults=app.querySelector('[data-word-results]');
  if(wordResults)findWords(wordResults,'');
  for(const file of app.querySelectorAll('details[data-source]'))file.addEventListener('toggle',()=>{
@@ -251,7 +256,7 @@ else if(sync.paired){
   const previousLast=state.last;
   sync.refresh().then(ok=>{
     if(route().lesson!==initial.lesson || !initial.lesson)return;
-    if(ok&&initial.lesson.id===previousLast&&state.last!==previousLast){location.replace(ref(lessons.find(l=>l.id===state.last)||initial.lesson));}
+    if(ok&&initial.lesson.id===previousLast&&state.last!==previousLast){location.replace(location.pathname+location.search+ref(lessons.find(l=>l.id===state.last)||initial.lesson));}
     else if(initial.lesson.id!==previousLast){state.last=initial.lesson.id;persist();}
   });
 }

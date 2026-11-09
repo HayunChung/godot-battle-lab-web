@@ -1,3 +1,4 @@
+import {screenshot} from './screenshot.js';
 import {esc} from './ui.js';
 
 const screens={
@@ -20,7 +21,7 @@ const screens={
 
 function figure(path,caption){
   const url='./assets/menu-guide/'+path+'.webp';
-  return `<figure class="guide-photo lesson-photo"><a href="${url}" target="_blank" rel="noopener" aria-label="Open full-size screenshot: ${esc(caption)}"><img loading="lazy" src="${url}" alt="${esc(caption)}"></a><figcaption>${esc(caption)} <a href="${url}" target="_blank" rel="noopener">View full size ↗</a></figcaption></figure>`;
+  return screenshot(url, caption, true);
 }
 
 export function menuStyling(id){

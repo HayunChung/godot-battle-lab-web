@@ -1,3 +1,4 @@
+import {screenshot} from './screenshot.js';
 import {menuStyling} from './menu-styling.js';
 import {readableCode,wordReference,findWords,openWord} from './word-reader.js';
 import {deviceSync,PUBLIC,ORIGINAL} from './device-sync.js';
@@ -29,6 +30,7 @@ try {
   localStorage.setItem(KEY, JSON.stringify(state));
 } catch { storageWorks = false; }
 const app = document.querySelector('#app');
+const photoViewer = document.querySelector('#photo-viewer');
 const preview = document.querySelector('#preview');
 const openModules = new Set();
 const conceptExpanded = new Map();
@@ -82,7 +84,7 @@ function fileBlock(path) {
 function stepPhoto(lessonId, step) {
   const [path, caption] = stepShot(lessonId, step);
   const url = './assets/' + path + '.webp';
-  return `<figure class="guide-photo lesson-photo"><a href="${esc(url)}" target="_blank" rel="noopener" aria-label="Open full-size screenshot: ${esc(caption)}"><img src="${esc(url)}" alt="${esc(caption)}"></a><figcaption>${esc(caption)} <a href="${esc(url)}" target="_blank" rel="noopener">View full size ↗</a></figcaption></figure>`;
+  return screenshot(url, caption, true);
 }
 
 function sourceReading(id) {
@@ -180,6 +182,15 @@ function updateAndFocus(selector){render();document.querySelector(selector)?.foc
 app.addEventListener('click',async e=>{
  const b=e.target.closest('button,a');if(!b)return;
  const {lesson:l}=route();
+ if(b.hasAttribute('data-enlarge')){
+   const original=b.closest('figure').querySelector('img');
+   const enlarged=photoViewer.querySelector('img');
+   enlarged.onload=()=>enlarged.style.setProperty('--photo-ratio',enlarged.naturalWidth/enlarged.naturalHeight);
+   enlarged.src=original.currentSrc||original.src;
+   enlarged.alt=original.alt;
+   photoViewer.showModal();
+   return;
+ }
  if(b.dataset.word){openWord(b.dataset.word);return;}
  if(b.dataset.action==='pair'||b.dataset.action==='sync-link'){await pairDevice(b.dataset.action==='pair');return;}
  if(b.dataset.action==='copy-link'){try{await navigator.clipboard.writeText(personalLink);b.textContent='Copied';}catch{document.querySelector('#personal-link').select();}return;}
@@ -214,6 +225,10 @@ app.addEventListener('click',async e=>{
  }
 });
 app.addEventListener('input',e=>{if(e.target.id==='find-word')findWords(app.querySelector('[data-word-results]'),e.target.value);else refreshSim(e.target.closest('[data-sim]'));});
+photoViewer.addEventListener('click',e=>{
+ if(e.target===photoViewer || e.target.closest('button'))photoViewer.close();
+});
+window.addEventListener('hashchange',()=>{if(photoViewer.open)photoViewer.close();});
 preview.addEventListener('click',e=>{if(e.target===preview||e.target.closest('button'))preview.close();});
 document.addEventListener('keydown',e=>{
  if(!drawer)return;

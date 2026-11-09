@@ -1,5 +1,6 @@
+import {screenshot} from './screenshot.js';
 import {esc} from './ui.js';
-const picture=(file,caption)=>`<figure class="guide-photo"><a href="./assets/setup/${file}.webp" target="_blank" rel="noopener" aria-label="Enlarge screenshot: ${esc(caption)}"><img loading="lazy" src="./assets/setup/${file}.webp" alt="${esc(caption)}"></a><figcaption>${esc(caption)} · Select to enlarge</figcaption></figure>`;
+const picture=(file,caption)=>screenshot('./assets/setup/'+file+'.webp',caption);
 const step=(n,title,body)=>`<section class="guide-step"><div class="guide-index">${n}</div><div><h2>${title}</h2>${body}</div></section>`;
 const sample=code=>`<pre tabindex="0"><code>${esc(code)}</code></pre>`;
 export const guideLink='<a class="lib-link" href="#/setup">First time using Godot? Open the illustrated setup guide →</a>';

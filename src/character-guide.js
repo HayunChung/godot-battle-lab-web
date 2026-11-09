@@ -1,6 +1,6 @@
-import {esc} from './ui.js';
+import {screenshot} from './screenshot.js';
 const folder='./assets/character-guide/';
-export const shot=(name,caption,path=folder)=>`<figure class="guide-photo"><a href="${path}${name}.webp" target="_blank" rel="noopener" aria-label="Enlarge screenshot: ${esc(caption)}"><img loading="lazy" src="${path}${name}.webp" alt="${esc(caption)}"></a><figcaption>${esc(caption)} · Select to enlarge</figcaption></figure>`;
+export const shot=(name,caption,path=folder)=>screenshot(path+name+'.webp',caption);
 export const section=(number,title,body)=>`<section class="guide-step"><div class="guide-index">${number}</div><div><h2>${title}</h2>${body}</div></section>`;
 export const characterLink='<a class="lib-link" href="#/character">Use a Blender character · illustrated guide →</a>';
 export function characterGuide(){

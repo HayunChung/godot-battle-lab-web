@@ -1,3 +1,4 @@
+import {deviceSync,PUBLIC,ORIGINAL} from './device-sync.js';
 import {menuPractice,mountMenuPractice} from './menu-practice.js';
 import {lessonReadings} from './lesson-readings.js';
 import {stepShot} from './lesson-shots.js';
@@ -37,29 +38,37 @@ const moduleIndex = l => modules.findIndex(m => m.lessons.includes(l));
 const ref = l => '#/lesson/' + l.id;
 const moduleIcons = ['box','code','bolt','target','game','layers'];
 const moduleBlurbs = ['Find your way from the Blender viewport to your first Godot scene.','Learn to read, write, and test your first lines of game code.','Bring your character to life with movement and animation.','Connect damage, enemies, and projectiles into a playable arena.',...modules.slice(4).map(m=>m.description)];
-function persist() {
+let skipVisit=false;
+const sync=deviceSync(lessons,()=>state,(next,draftsChanged)=>{
+  if(JSON.stringify(next)===JSON.stringify(state)&&!draftsChanged)return;
+  state=next;
+  saveLocal();
+  render();
+});
+function saveLocal() {
   try { localStorage.setItem(KEY,JSON.stringify(state)); } catch { storageWorks=false; }
 }
+function persist(){ saveLocal(); sync.changed(); }
 function route() {
   const [,section,id] = location.hash.split('/');
   const lesson = section === 'lesson' && lessons.find(l => l.id === id);
-  return {section:lesson?'lesson':['resources','complete','setup','own-project','character','attack','reactions','enemy-attack','roll','stamina','shared-budget'].includes(section)?section:'dashboard',lesson};
+  return {section:lesson?'lesson':['devices','pair','resources','complete','setup','own-project','character','attack','reactions','enemy-attack','roll','stamina','shared-budget'].includes(section)?section:'dashboard',lesson};
 }
 const progressBar = (v, label) => `<div class="track" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}"><i style="width:${v}%"></i></div>`;
 const moduleColor = i=>'mod-'+i;
 function sidebar(r) {
   return `<aside id="sidebar" class="sidebar ${drawer?'visible':''}" aria-label="Course navigation"><header class="brand"><img src="./assets/mark.svg" alt="" width="39" height="39"><a href="#/" aria-label="Battle Lab dashboard"><strong>Battle Lab</strong><small>GODOT LEARNING STUDIO</small></a><button class="drawer-close icon-btn" data-action="menu" aria-label="Close navigation">${icon('close')}</button></header>
-  <div class="sidebar-scroll"><div class="side-label">WORKSPACE</div><nav class="main-nav"><a href="#/" class="${r.section==='dashboard'?'selected':''}">${icon('grid')} Dashboard</a><a href="#/setup" class="${['setup','own-project','character','attack','reactions','enemy-attack','roll','stamina','shared-budget'].includes(r.section)?'selected':''}">${icon('book')} Setup guide</a><a href="#/resources" class="${r.section==='resources'?'selected':''}">${icon('folder')} Resource library</a></nav>
+  <div class="sidebar-scroll"><div class="side-label">WORKSPACE</div><nav class="main-nav"><a href="#/" class="${r.section==='dashboard'?'selected':''}">${icon('grid')} Dashboard</a><a href="#/setup" class="${['setup','own-project','character','attack','reactions','enemy-attack','roll','stamina','shared-budget'].includes(r.section)?'selected':''}">${icon('book')} Setup guide</a><a href="#/resources" class="${r.section==='resources'?'selected':''}">${icon('folder')} Resource library</a><a href="#/devices" class="${['devices','pair'].includes(r.section)?'selected':''}">${icon('layers')} Sync progress</a></nav>
   <div class="side-label second">CURRICULUM</div><nav class="chapter-nav">${modules.map((m,i)=>`<div><button class="chapter-switch ${moduleColor(i)}" data-module="${i}" aria-expanded="${openModules.has(i)}"><span class="chap-glyph">${icon(moduleIcons[i],16)}</span><span class="chap-name"><small>MODULE ${pad(i+1)} · ${count(m)}/${m.lessons.length}</small><b>${esc(m.title)}</b></span>${icon(openModules.has(i)?'down':'right',13)}</button>${openModules.has(i)?`<div class="side-lessons">${m.lessons.map(l=>`<a class="${r.lesson===l?'current':''}" href="${ref(l)}">${state.completed.includes(l.id)?icon('check',13):'<i></i>'}${esc(l.title)}</a>`).join('')}</div>`:''}</div>`).join('')}</nav></div>
   <footer class="side-foot"><div class="flex items-center justify-between"><b>${icon('target',15)} Your progress</b><strong>${percent()}%</strong></div>${progressBar(percent(),'Course completion')}<small>${state.completed.length} of ${lessons.length} lessons complete</small></footer></aside>`;
 }
 function topbar(r) {
-  const name = r.lesson ? modules[moduleIndex(r.lesson)].title : ({dashboard:'Dashboard',resources:'Resource library',complete:'Course complete',setup:'First setup','own-project':'Use my project',character:'My Blender character',attack:'Attack animation',reactions:'Hit and death','enemy-attack':'Enemy weapon timing',roll:'Dodge roll',stamina:'Roll stamina','shared-budget':'Shared stamina'}[r.section]);
+  const name = r.lesson ? modules[moduleIndex(r.lesson)].title : ({dashboard:'Dashboard',devices:'Sync progress',pair:'Resume on this device',resources:'Resource library',complete:'Course complete',setup:'First setup','own-project':'Use my project',character:'My Blender character',attack:'Attack animation',reactions:'Hit and death','enemy-attack':'Enemy weapon timing',roll:'Dodge roll',stamina:'Roll stamina','shared-budget':'Shared stamina'}[r.section]);
   return `<header class="topbar"><button class="menu icon-btn" data-action="menu" aria-label="Open navigation" aria-expanded="${drawer}">${icon('menu')}</button><div class="crumb">${icon('layers',16)} <a href="#/">Workspace</a> ${icon('right',12)} <span>${esc(name)}</span></div><span class="engine"><i></i> Godot 4.4.1</span></header>`;
 }
 function dashboard() {
   const next = lessons.find(l=>l.id===state.last)||lessons[0];
-  return `<div class="page"><header class="page-title"><h1>Learning dashboard</h1><p>Your workshop for turning 3D art into a playable game.</p></header>
+  return `<div class="page"><header class="page-title"><h1>Learning dashboard</h1><p>Your workshop for turning 3D art into a playable game.</p><a class="lib-link" href="#/devices">Continue on another device →</a></header>
   <section class="hero"><img class="hero-img" src="./assets/art/arena.webp" alt="Isometric sci-fi arena with a cyan pilot facing a coral enemy"><div class="hero-shade"></div><div class="hero-copy"><span class="kicker hero-label">${icon('game',15)} PROJECT-BASED COURSE</span><h2>Build your first<br><em>3D battle game.</em></h2><p>From Blender artist to game developer.<br>Learn Godot and GDScript, one scene at a time.</p><div class="hero-meta"><span>${icon('layers',15)} ${modules.length} modules</span><span>${icon('book',15)} ${lessons.length} lessons</span></div><a class="primary" href="${ref(next)}">${state.last?'Resume Learning':'Start Learning'} ${icon('arrow',17)}</a></div><button class="preview-button" data-action="preview" aria-label="Preview playable arena">${icon('expand',15)}</button></section>
   <section class="curriculum"><div class="section-heading"><div><span class="kicker">LEARNING PATH</span><h2>Course curriculum</h2></div><span class="module-total">${icon('layers',15)} ${modules.length} modules</span></div><div class="card-grid">${modules.map((m,i)=>`<a class="course-card ${moduleColor(i)}" href="${ref(m.lessons.find(l=>!state.completed.includes(l.id))||m.lessons[0])}"><div class="card-art"><img src="${i===5?'./assets/menu-guide/lobby.webp':i===4?'./assets/enemy-attack-guide/godot-encounter.webp':'./assets/art/chapter-'+(i+1)+'.webp'}" alt=""><span class="card-number">${pad(i+1)}</span></div><div class="card-body"><span class="kicker">MODULE ${pad(i+1)}</span><h3>${esc(m.title)}</h3><p>${moduleBlurbs[i]}</p><div class="card-meta"><span>${icon('book',14)} ${m.lessons.length} lessons</span><span class="card-arrow">${icon('arrow',15)}</span></div>${progressBar(Math.round(count(m)*100/m.lessons.length),m.title+' completion')}</div></a>`).join('')}</div></section>
   <a class="resource-banner" href="#/resources"><span class="resource-icon">${icon('folder',23)}</span><span><b>Resource library</b><small>Project files, practice assets, and the coding glossary</small></span>${icon('arrow')}</a></div>`;
@@ -104,17 +113,46 @@ function complete(){
  const next=lessons.find(l=>!state.completed.includes(l.id))||lessons[0];
  return `<div class="page"><section class="panel finish"><span class="resource-icon">${icon('flag',28)}</span><div class="kicker">COURSE PROGRESS</div><h1>${all?'Arena complete!':'Your learning progress'}</h1><p>${state.completed.length} of ${lessons.length} lessons complete. ${all?'Run your arena, defeat the enemy, and restart for another round.':'Continue with your next unfinished lesson.'}</p>${progressBar(percent(),'Overall progress')}<a class="primary" href="${all?'#/resources':ref(next)}">${all?'Open project files':'Continue learning'} ${icon('arrow',15)}</a><a class="lib-link" href="#/">Back to dashboard</a></section></div>`;
 }
+let personalLink='';
+let syncError='';
+let connecting=false;
+function devicePage(pairing){
+  const last=lessons.find(l=>l.id===state.last);
+  const step=last?.steps.find(s=>s.id===state.active[last.id]);
+  const progress=last?last.title+' · '+(step?.title||(state.active[last.id]==='quiz'?'Knowledge check':last.steps[0].title)):'No lesson started in this browser.';
+  return `<div class="page"><header class="page-title"><h1>${pairing?'Resume on this device':'Sync your progress'}</h1><p>Carry your last exercise step, completed lessons, quiz answers and saved practice code between devices.</p></header><section class="panel sync-panel"><h2>Your place in the course</h2><p>${esc(progress)}</p><p>${state.completed.length} of ${lessons.length} lessons complete</p><p role="status" data-sync-status>${esc(syncError||sync.status)}</p>
+    ${pairing?`<button class="primary" data-action="pair" ${connecting?'disabled':''}>${connecting?'Connecting…':state.last&&!sync.paired?'Merge this browser’s progress and open':'Open my progress'}</button>`:`<button class="primary" data-action="sync-link" ${connecting?'disabled':''}>${connecting?'Connecting…':sync.paired?'Show my personal link':'Create my personal link'}</button>`}
+    <p>Anyone with your personal link can view and update this progress. Keep it for your own devices.</p>
+    ${personalLink&&!pairing?`<div class="sync-transfer"><div data-qr></div><div><h3>Continue on your phone</h3><p>Scan the QR code with your phone camera, or copy the link to yourself. Keep the same link for your next session.</p><label for="personal-link">Your personal link</label><input id="personal-link" readonly value="${esc(personalLink)}"><button class="secondary" data-action="copy-link">Copy link</button> <a class="primary" href="${esc(personalLink)}">Continue on the public site →</a></div></div>`:''}
+    </section>${!pairing&&location.origin!==ORIGINAL?`<section class="panel sync-panel"><h2>Bring progress from the original site</h2><p>On the computer and browser where you studied, open the original site. Create your personal link there first, then open it on this device.</p><a class="secondary" href="${ORIGINAL}/#/devices">Open original progress →</a></section>`:''}</div>`;
+}
+async function pairDevice(join){
+  if(connecting)return;
+  connecting=true;syncError='';render();
+  try{
+    const token=join?location.hash.split('/')[2]:undefined;
+    if(join&&!token)throw Error('This link is incomplete.');
+    personalLink=await sync.connect(token);
+    if(join && route().section==='pair'){
+      history.replaceState(null,'',state.last?'#/lesson/'+state.last:'#/');
+      skipVisit=true;
+    }
+  }catch(err){syncError=err instanceof TypeError?'Could not connect. Check your connection and retry.':err.message;}
+  finally{connecting=false;render();skipVisit=false;}
+}
 let closeArena;
 function render(){
  closeArena?.();
  const r=route(), key=r.lesson?.id||r.section;
  if(key!==routeKey){
-   if(r.lesson){state.last=r.lesson.id;openModules.add(moduleIndex(r.lesson));persist();}
+   if(r.lesson){openModules.add(moduleIndex(r.lesson));if(!skipVisit){state.last=r.lesson.id;persist();}}
    drawer=false;window.scrollTo(0,0);
  }
  const changed=key!==routeKey;routeKey=key;
- document.title=(r.lesson?.title||({dashboard:'Dashboard',resources:'Resource library',complete:'Course progress',setup:'First setup','own-project':'Use my project',character:'My Blender character',attack:'Attack animation',reactions:'Hit and death','enemy-attack':'Enemy weapon timing',roll:'Dodge roll',stamina:'Roll stamina','shared-budget':'Shared stamina'}[r.section]))+' · Battle Lab';
- app.innerHTML=sidebar(r)+`<button class="scrim ${drawer?'visible':''}" aria-label="Close menu" data-action="menu"></button><main id="content" tabindex="-1">${topbar(r)}${storageWorks?'':'<p class="storage-warning">Progress is available for this session only. Browser storage is unavailable.</p>'}${r.lesson?lessonScreen(r.lesson):r.section==='shared-budget'?sharedStaminaGuide():r.section==='stamina'?staminaGuide():r.section==='roll'?rollGuide():r.section==='enemy-attack'?enemyAttackGuide():r.section==='reactions'?reactionsGuide():r.section==='attack'?attackGuide():r.section==='character'?characterGuide():['setup','own-project'].includes(r.section)?setupGuide(r.section==='own-project'):r.section==='resources'?resources():r.section==='complete'?complete():dashboard()}</main>`;
+ document.title=(r.lesson?.title||({dashboard:'Dashboard',devices:'Sync progress',pair:'Resume on this device',resources:'Resource library',complete:'Course progress',setup:'First setup','own-project':'Use my project',character:'My Blender character',attack:'Attack animation',reactions:'Hit and death','enemy-attack':'Enemy weapon timing',roll:'Dodge roll',stamina:'Roll stamina','shared-budget':'Shared stamina'}[r.section]))+' · Battle Lab';
+ app.innerHTML=sidebar(r)+`<button class="scrim ${drawer?'visible':''}" aria-label="Close menu" data-action="menu"></button><main id="content" tabindex="-1">${topbar(r)}${storageWorks?'':'<p class="storage-warning">Progress is available for this session only. Browser storage is unavailable.</p>'}${r.lesson?lessonScreen(r.lesson):['devices','pair'].includes(r.section)?devicePage(r.section==='pair'):r.section==='shared-budget'?sharedStaminaGuide():r.section==='stamina'?staminaGuide():r.section==='roll'?rollGuide():r.section==='enemy-attack'?enemyAttackGuide():r.section==='reactions'?reactionsGuide():r.section==='attack'?attackGuide():r.section==='character'?characterGuide():['setup','own-project'].includes(r.section)?setupGuide(r.section==='own-project'):r.section==='resources'?resources():r.section==='complete'?complete():dashboard()}</main>`;
+ const qr=app.querySelector('[data-qr]');
+ if(qr)import('../vendor/qrcode.mjs').then(({default:make})=>{const code=make(0,'M');code.addData(personalLink);code.make();qr.innerHTML=code.createSvgTag({scalable:true,alt:'Scan your personal progress link'});});
  const tracked=lessons.find(l=>l.guide===r.section);
  if(tracked){const nav=app.querySelector('.guide-tabs');if(nav)nav.insertAdjacentHTML('afterbegin',`<a class="secondary" href="${ref(tracked)}">Open tracked lesson →</a>`);}
  const concept=app.querySelector('.lesson-concept');
@@ -131,6 +169,8 @@ function updateAndFocus(selector){render();document.querySelector(selector)?.foc
 app.addEventListener('click',async e=>{
  const b=e.target.closest('button,a');if(!b)return;
  const {lesson:l}=route();
+ if(b.dataset.action==='pair'||b.dataset.action==='sync-link'){await pairDevice(b.dataset.action==='pair');return;}
+ if(b.dataset.action==='copy-link'){try{await navigator.clipboard.writeText(personalLink);b.textContent='Copied';}catch{document.querySelector('#personal-link').select();}return;}
  if(b.closest('[data-sim]')){refreshSim(b.closest('[data-sim]'),b);return;}
  if(b.dataset.module!==undefined){const i=Number(b.dataset.module);openModules.has(i)?openModules.delete(i):openModules.add(i);updateAndFocus('[data-module="'+i+'"]');return;}
  if(b.dataset.action==='menu'){drawer=!drawer;render();document.querySelector(drawer?'.drawer-close':'.menu').focus();return;}
@@ -172,6 +212,18 @@ document.addEventListener('keydown',e=>{
  }
 });
 document.querySelector('.skip').addEventListener('click',e=>{e.preventDefault();document.querySelector('#content').focus();});
-window.addEventListener('hashchange',render);
+window.addEventListener('hashchange',()=>{render();if(route().section==='pair'&&(sync.paired||!state.last))pairDevice(true);});
 window.addEventListener('storage',e=>{if(e.key===KEY){state=readProgress(e.newValue,lessons);render();}});
+const initial=route();
+skipVisit=sync.paired;
 render();
+skipVisit=false;
+if(initial.section==='pair'){if(sync.paired||!state.last)pairDevice(true);}
+else if(sync.paired){
+  const previousLast=state.last;
+  sync.refresh().then(ok=>{
+    if(route().lesson!==initial.lesson || !initial.lesson)return;
+    if(ok&&initial.lesson.id===previousLast&&state.last!==previousLast){location.replace(ref(lessons.find(l=>l.id===state.last)||initial.lesson));}
+    else if(initial.lesson.id!==previousLast){state.last=initial.lesson.id;persist();}
+  });
+}

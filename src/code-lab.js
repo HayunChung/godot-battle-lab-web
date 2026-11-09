@@ -12,7 +12,7 @@ export function draft(id){
 }
 export function saveDraft(id,code){
   drafts.set(id,code);results.delete(id);
-  try{localStorage.setItem(key(id),code);}catch{}
+  try{localStorage.setItem(key(id),code);window.dispatchEvent(new Event("battle-code-changed"));}catch{}
 }
 export function lineNotes(id,code){
   return explainCode(code,id).map(n=>`<li><small>Line ${n.line}</small><code>${esc(n.source)}</code><span>${esc(n.meaning)}</span></li>`).join('');

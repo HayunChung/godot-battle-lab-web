@@ -6,13 +6,36 @@ let largeHud = false;
 const settingKey = 'battle-lab.large-hud.v1';
 
 export function menuPractice() {
-  return '<section class="code-lab menu-practice" tabindex="-1"><h3>Test the game menu</h3><div data-menu-screen></div></section>';
+  return '<section class="code-lab menu-practice" tabindex="-1"><h3>Test the game menu</h3><details class="appearance-controls"><summary>Try your own menu art</summary><p>Preview an image on the lobby, settings screen and training banner. The file stays in this browser tab.</p><label>Background image <input type="file" data-preview-art accept="image/png,image/jpeg,image/webp"></label><label><input type="checkbox" data-preview-sparks checked> Show drifting particles</label><button class="secondary" data-reset-art>Restore sample image</button><small data-art-message role="status"></small></details><div data-menu-screen></div></section>';
 }
 
 export function mountMenuPractice(app) {
   const screen = app.querySelector('[data-menu-screen]');
   if (!screen) return;
   try { largeHud = localStorage.getItem(settingKey) === 'true'; } catch {}
+  const picker=app.querySelector('[data-preview-art]');
+  const notice=app.querySelector('[data-art-message]');
+  let customImage='';
+  const clearImage=()=>{
+    if(customImage)URL.revokeObjectURL(customImage);
+    customImage='';
+    screen.style.removeProperty('--menu-image');
+  };
+  picker.onchange=async()=>{
+    const file=picker.files[0];if(!file)return;
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type)){notice.textContent='Choose a PNG, JPG or WebP image.';return;}
+    const url=URL.createObjectURL(file);
+    const image=new Image();image.src=url;
+    try{
+      await image.decode();
+      if(!screen.isConnected || picker.files[0]!==file){URL.revokeObjectURL(url);return;}
+      clearImage();customImage=url;
+      screen.style.setProperty('--menu-image','url("'+url+'")');
+      notice.textContent='Showing '+file.name;
+    }catch{URL.revokeObjectURL(url);notice.textContent='This image could not be opened. Try another file.';}
+  };
+  app.querySelector('[data-reset-art]').onclick=()=>{picker.value='';clearImage();notice.textContent='Sample image restored.';};
+  app.querySelector('[data-preview-sparks]').onchange=e=>screen.classList.toggle('no-sparks',!e.target.checked);
   let frame, mode, round, step, previous, bank;
   const pressed = new Set();
   const button = (action, title) => '<button class="secondary" data-menu="'+action+'">'+title+'</button>';
@@ -20,6 +43,7 @@ export function mountMenuPractice(app) {
     cancelAnimationFrame(frame);
     pressed.clear();
     mode = next;
+    screen.dataset.mode=mode;
     if (mode === 'lobby') {
       screen.innerHTML = '<h4>Relay Arena</h4><div class="menu-buttons">'+button('battle','Start battle')+button('tutorial','Tutorial')+button('settings','Settings')+'</div>';
     } else if (mode === 'settings') {
@@ -57,6 +81,15 @@ export function mountMenuPractice(app) {
       }
       previous=performance.now();bank=0;animate(previous);canvas.focus({preventScroll:true});
     }
+    if(mode!=='battle'){
+      const surface=mode==='tutorial'?screen.querySelector('[data-prompt]'):screen;
+      const dust=document.createElement('span');
+      dust.className='menu-dust';dust.setAttribute('aria-hidden','true');
+      for(let i=0;i<10;i++){const spark=document.createElement('i');spark.style.setProperty('--i',i);dust.append(spark);}
+      // The tutorial updates the prompt text as input is received. Keep its art layer outside that text node.
+      if(mode==='tutorial'){const banner=document.createElement('div');banner.className='training-banner';surface.replaceWith(banner);banner.append(dust,surface);}
+      else surface.prepend(dust);
+    }
     screen.classList.toggle('large-hud',largeHud);
     if (focus && (mode==='settings'||mode==='lobby')) screen.querySelector('input,button').focus({preventScroll:true});
   }
@@ -86,5 +119,5 @@ export function mountMenuPractice(app) {
   screen.onlostpointercapture=e=>pressed.delete(e.target.dataset.key);
   const clear=()=>pressed.clear();
   window.addEventListener('blur',clear);show('lobby',false);
-  return ()=>{cancelAnimationFrame(frame);window.removeEventListener('blur',clear);};
+  return ()=>{clearImage();cancelAnimationFrame(frame);window.removeEventListener('blur',clear);};
 }

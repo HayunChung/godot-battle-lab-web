@@ -1,3 +1,4 @@
+import {readableCode} from './word-reader.js';
 import {challenges,runChallenge,explainCode} from './gd-practice.js';
 import {icon,esc} from './ui.js';
 import {previewMarkup,mountPreview} from './arena-preview.js';
@@ -15,7 +16,7 @@ export function saveDraft(id,code){
   try{localStorage.setItem(key(id),code);window.dispatchEvent(new Event("battle-code-changed"));}catch{}
 }
 export function lineNotes(id,code){
-  return explainCode(code,id).map(n=>`<li><small>Line ${n.line}</small><code>${esc(n.source)}</code><span>${esc(n.meaning)}</span></li>`).join('');
+  return explainCode(code,id).map(n=>`<li><small>Line ${n.line}</small><code>${readableCode(n.source)}</code><span>${esc(n.meaning)}</span></li>`).join('');
 }
 export function explainPanel(id,code){
   return `<details class="line-guide" data-explain="${id}"><summary>Read this code line by line</summary><ol>${lineNotes(id,code)}</ol></details>`;
@@ -39,7 +40,7 @@ export function codeLab(id){
   if(!Object.hasOwn(challenges,id))return '';
   const c=challenges[id],code=draft(id);
   return `<section class="code-lab" data-code-lab="${id}"><div class="panel-label">${icon('code',15)} CODING PRACTICE</div><h3>${esc(c.title)}</h3><p>${esc(c.prompt)}</p>
-    <label for="practice-source">Your GDScript</label><div class="signature"><code>${esc(c.signature)}</code></div>
+    <label for="practice-source">Your GDScript</label><div class="signature"><code>${readableCode(c.signature)}</code></div>
     <div class="edit-wrap"><pre class="line-nums" aria-hidden="true">${numbers(code)}</pre><textarea id="practice-source" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="body-help" maxlength="12000"></textarea></div>
     <small id="body-help">Enter the function body starting at line 1. Indent nested blocks with four spaces.</small>
     ${explainPanel(id,code)}<button class="primary" type="button" data-run-code>${icon('play',14)} Run code</button><div class="code-response" aria-live="${c.preview?'off':'polite'}">${report(id,results.get(id))}</div>

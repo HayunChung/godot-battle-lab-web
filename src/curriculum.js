@@ -80,7 +80,7 @@ export const modules = [
         options: ['4.0', '6.5', '10.5'], answer: 1, feedback: 'The Inspector stores a per-instance override. The script default supplies the starting value and the revert target.',
         troubleshooting: [fix('Speed does not appear.', 'Save the script, clear any red errors, and select the Properties node itself in Scene. Selecting the script file in FileSystem shows different properties.'), fix('The editor highlights a pasted line in red.', 'A line starting with # is a comment. A line below a function ending in : needs one level of indentation. Replace the entire script with the provided source, including its original indentation.')],
         walkthrough: [read('extends Node', 'This script adds behavior to a Node. The node already knows how to belong to a scene tree.'), read('@export var speed: float = 4.0', 'Read from left to right: expose in Inspector, declare a variable, name it speed, require a decimal number, give it a default.'), read('func _ready() -> void:', 'func introduces a function, a named group of instructions. Godot calls _ready when this node enters a ready scene. Empty parentheses mean no inputs. void means the function sends no result back.'), read('print("Scout speed: ", speed)', 'Indented lines belong to the function above. print sends its arguments to Output. Text inside quotes stays literal; an unquoted variable name reads its current value.')],
-        files: ['practice/properties.gd'],
+        files: ['practice/properties.gd', 'practice/guard.gd', 'practice/guard.tscn'],
       },
       {
         id: 'functions-and-signals', title: 'Send a signal when you fire', minutes: 12,
@@ -97,7 +97,7 @@ export const modules = [
         options: ['The receiver gets that earlier shot at the next frame.', 'Godot connects the receiver automatically.', 'That receiver misses the shot.'], answer: 2, feedback: 'A connection listens from the moment it is made. Connect before calling shoot() to catch its first emission.',
         troubleshooting: [fix('The receiver never prints.', 'Check that the connect call runs before shoot(). Pass the receiver function by name to connect; adding () would try to call it there.'), fix('I see a type error after changing the argument.', 'Use the whole number 3 without quotes. An int argument accepts a whole number, while "3" is text.')],
         walkthrough: [read('signal fired(amount: int)', 'Declare an event and describe the one piece of data it carries. This line alone sends nothing.'), read('fired.connect(_on_fired)', 'Register the receiving function. Its name here describes where the event should go.'), read('shoot()', 'Parentheses call the function. Godot jumps into its indented body, then continues after the call.'), read('fired.emit(1)', 'Emit once. The value 1 becomes the receiving function’s argument for this call; that argument is in scope inside the receiver.')],
-        files: ['practice/signals.gd'],
+        files: ['practice/signals.gd', 'practice/guard.gd', 'practice/guard.tscn'],
       },
       {
         id: 'conditions-and-loops', title: 'Decide which targets are alive', minutes: 10,
@@ -113,7 +113,7 @@ export const modules = [
         options: ['2', '4', '1'], answer: 0, feedback: '3 and 1 are greater than zero. Both zeroes reach the alternative branch.',
         troubleshooting: [fix('The same result prints outside the loop.', 'Check indentation. The branch must be inside the loop, and each branch action must be indented one more level.'), fix('Zero health still counts as alive.', 'Inspect the operator. >= includes equality; use > to require a strictly positive number.')],
         walkthrough: [read('[0, 2, 1]', 'Brackets build an array; commas separate its elements. The first element is at index 0.'), read('for hp in health_values:', 'The loop variable temporarily holds the next element. A colon starts the indented instructions to repeat.'), read('if hp > 0:', 'The comparison returns a bool. Godot executes this branch only when the comparison is true.'), read('else:', 'Use the same indentation as if. Its body executes for this element when the comparison is false.')],
-        files: ['practice/targets.gd'],
+        files: ['practice/targets.gd', 'practice/guard.gd', 'practice/guard.tscn'],
       },
     ],
   },

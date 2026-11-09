@@ -48,7 +48,7 @@ const sync=deviceSync(lessons,()=>state,(next,draftsChanged)=>{
 function saveLocal() {
   try { localStorage.setItem(KEY,JSON.stringify(state)); } catch { storageWorks=false; }
 }
-function persist(){ saveLocal(); sync.changed(); }
+function persist(){ const current=route().lesson;if(current)state.last=current.id; saveLocal(); sync.changed(); }
 function route() {
   const [,section,id] = location.hash.split('/');
   const lesson = section === 'lesson' && lessons.find(l => l.id === id);

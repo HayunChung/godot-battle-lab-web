@@ -37,7 +37,14 @@ function ticketFor(room){
   return ticket;
 }
 
-export const roomEntry='<section class="panel"><h2>Practice with a friend</h2><p>Create one room and send its link to your friend. Choose one role each to check the same list together.</p><button class="primary" data-create-room>Create shared room</button> <span role="status" data-create-status></span></section>';
+const recentKey='battle-lab.recent-room';
+let recentRoom='';
+export function recentRoomLink(){
+  let room=recentRoom;
+  try{room=localStorage.getItem(recentKey)||room;}catch{}
+  return /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(room)?`<a class="lib-link" href="${roomPath(room)}">Return to shared room →</a>`:'';
+}
+export const roomEntry=()=>`<section class="panel"><h2>Practice with a friend</h2><p>Create one room and send its link to your friend. Choose one role each to check the same list together.</p><button class="primary" data-create-room>Create shared room</button> ${recentRoomLink()} <span role="status" data-create-status></span></section>`;
 
 export async function createRoom(button){
   button.disabled=true;
@@ -189,6 +196,10 @@ export function mountRoom(root,room,linkedStep){
   }
   function accept(result){
     if(!active)return;
+    if(!latest){
+      recentRoom=room;
+      try{localStorage.setItem(recentKey,room);}catch{}
+    }
     if(!latest||result.revision>=latest.revision)latest=result;
     paint();
   }
@@ -202,7 +213,7 @@ export function mountRoom(root,room,linkedStep){
         const target=landing;
         if(latest.views[latest.role]===target || await change('view',{role:latest.role,step:target,advance:latest.advance}))landing=null;
       }
-      if(active&&!busy)status.textContent=readyMessage();
+      if(active&&!busy && status.textContent!==readyMessage())status.textContent=readyMessage();
     }
     catch(e){if(active&&!busy)status.textContent=e.message.startsWith('Room not found')?e.message:'Connection interrupted. Reconnecting…';}
     finally{reading=false;}

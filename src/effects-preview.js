@@ -15,7 +15,7 @@ const visualFields = [
 const storageKey = 'battle-lab.hit-feedback.v1';
 
 export function effectsPreview(id) {
-  const rumble=['duel-hit-rumble','duel-vibration-settings'].includes(id);
+  const rumble=['duel-hit-rumble','duel-vibration-settings','duel-vibration-preview'].includes(id);
   const duel=id==='duel-hit-effects' || rumble;
   const scene=rumble?matchScene:duel?duelScene:flatScene;
   const fields=rumble?rumbleFields:visualFields;
@@ -24,14 +24,14 @@ export function effectsPreview(id) {
   ${fields.map(f=>`<label class="tuner-control">${f.label} <output></output><input type="range" data-effect="${f.property}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.initial}"></label>`).join('')}
   ${rumble?'':'<div class="live-stage"></div><button type="button" class="secondary" data-effect-play>Run Godot preview</button>'}
   <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${rumble?'Open <code>scripts/hit_rumble.gd</code> to see how the selected device uses these defaults. In-game settings saved on this computer take priority.':duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
-  <pre data-effect-source></pre>${duel?'<p>In Godot’s Script editor, use Go to Line (Ctrl+L or ⌘L) to follow one confirmed hit.</p><pre data-hit-code></pre>':''}<button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
+  <pre data-effect-source></pre>${duel?'<p>In Godot’s Script editor, use Go to Line (Ctrl+L or ⌘L) to follow the calls below.</p><pre data-hit-code></pre>':''}<button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
   <p>The ZIP includes this lesson and its screenshots in <code>MY-EFFECTS-LESSON.md</code>.</p><p role="status"></p></div></details>`;
 }
 
 export function mountEffectsPreview(app,lesson,sources) {
   const lab=app.querySelector('.effects-preview');
   if(!lab)return;
-  const rumble=['duel-hit-rumble','duel-vibration-settings'].includes(lesson.id);
+  const rumble=['duel-hit-rumble','duel-vibration-settings','duel-vibration-preview'].includes(lesson.id);
   const duel=lesson.id==='duel-hit-effects' || rumble;
   const fields=rumble?rumbleFields:visualFields;
   const kind=duel?'duel-hit':'hit-feedback';
@@ -61,7 +61,11 @@ export function mountEffectsPreview(app,lesson,sources) {
     }).join('\n');
   }
   if(duel){
-    const calls=rumble?[
+    const calls=lesson.id==='duel-vibration-preview'?[
+      ['rumble_settings.gd','%Test.pressed.connect(_test_vibration)'],
+      ['rumble_settings.gd','%Defaults.pressed.connect(_restore_defaults)'],
+      ['hit_rumble.gd','Input.start_joy_vibration(device, force, force, seconds)']
+    ]:rumble?[
       ['duel.gd','$HitRumble.play_hit(target, mode)'],
       ['hit_rumble.gd','Input.start_joy_vibration(device, strength, strength, duration)']
     ]:[

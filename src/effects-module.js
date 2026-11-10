@@ -1,3 +1,4 @@
+import {previewLesson,previewReading} from './duel-vibration-preview.js';
 import {settingsLesson,settingsReading} from './duel-vibration-settings.js';
 import {rumbleLesson,rumbleReading} from './duel-rumble.js';
 import {duelEffectsLesson,duelEffectsReading} from './duel-effects-lesson.js';
@@ -116,7 +117,8 @@ export const effectsModule = {
   ]
 };
 
-effectsModule.lessons.push(duelEffectsLesson,rumbleLesson,settingsLesson);
+effectsModule.lessons.push(duelEffectsLesson,rumbleLesson,settingsLesson,previewLesson);
+effectsReadings[previewLesson.id] = previewReading;
 effectsReadings[settingsLesson.id] = settingsReading;
 effectsReadings[rumbleLesson.id] = rumbleReading;
 effectsReadings[duelEffectsLesson.id] = duelEffectsReading;

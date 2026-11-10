@@ -1,3 +1,4 @@
+import {tuner,bindTuner} from './direction-tuner.js';
 import {esc} from './ui.js';
 import {screenshot} from './screenshot.js';
 
@@ -98,6 +99,8 @@ function setFrame(panel, index) {
   panel.querySelector('output').textContent = (index / 8).toFixed(3) + ' s';
 }
 
+export function liveTuner(id) { return tuner(comparisons[id][0]); }
+
 export function comparison(id) {
   const [name, before, after, note, initial] = comparisons[id];
   const prefix = '<section class="cue-compare"><h4>Compare before and after</h4><p>' + esc(note) + '</p>';
@@ -108,6 +111,7 @@ export function comparison(id) {
 }
 
 export function bindComparison(container) {
+  bindTuner(container);
   const panel = container.querySelector('.cue-pair');
   const range = panel?.querySelector('input');
   for (const button of panel?.querySelectorAll('[data-cue-view]') || []) {

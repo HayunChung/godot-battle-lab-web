@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box}html,body,canvas{width:100%;height:100%;margin:0}body{background:#101522;color:#e3f6ef;font:15px system-ui}canvas{display:block;pointer-events:none}#status{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:1rem;background:#101522}#status[hidden]{display:none}
+</style></head><body><canvas id="game" tabindex="-1" aria-label="Live Godot scene"></canvas><div role="status" id="status">Opening Godot 4.4.1…</div><script src="./godot.js"></script><script>
+const statusLabel=document.querySelector('#status');
+window.directionRevision=0;
+window.directionRequest=decodeURIComponent(location.hash.slice(1));
+window.configureDirection=request=>{window.directionRequest=JSON.stringify(request);window.directionRevision++;};
+const nativeFetch=window.fetch.bind(window);
+window.fetch=async function(url,options){
+  if(!String(url).endsWith('godot.wasm'))return nativeFetch(url,options);
+  const compressed=await nativeFetch('./engine-gzip.bin',options);
+  if(!compressed.ok)return compressed;
+  return new Response(compressed.body.pipeThrough(new DecompressionStream('gzip')),{headers:{'Content-Type':'application/wasm'}});
+};
+async function launch(){
+  const missing=Engine.getMissingFeatures({threads:false});
+  if(missing.length)throw Error(missing.join(', '));
+  const engine=new Engine({canvas:document.querySelector('canvas'),canvasResizePolicy:2,focusCanvas:false,persistentPaths:[],executable:'godot',mainPack:'preview.pck'});
+  await engine.startGame();
+  statusLabel.hidden=true;
+}
+launch().catch(error=>{statusLabel.textContent='Preview unavailable. Open the downloaded project in Godot. '+error.message;});
+</script></body></html>

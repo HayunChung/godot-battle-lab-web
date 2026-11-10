@@ -1,4 +1,4 @@
-import {stepImage, comparison} from './direction-media.js';
+import {stepImage, comparison, liveTuner} from './direction-media.js';
 import {esc} from './ui.js';
 
 const smash = ['Nintendo · Perfect Shield', 'https://www.smashbros.com/en_US/howtoplay/technique.html'];
@@ -95,5 +95,5 @@ export function directionWorkshop(id) {
     'enemy-weapon-timing': ['reactions-guide/Sentinel.blend','Sentinel'],
     'damage-reactions': ['reactions-guide/Sentinel.blend','Sentinel']
   }[id];
-  return `<details class="direction-workshop"><summary>Direction workshop · ${esc(title)}</summary><p><a class="lib-link" href="./downloads/battle-lab.zip" download>Reference Godot project ↓</a>${rig ? ` <a class="lib-link" href="./assets/${rig[0]}" download>${rig[1]} Blender file ↓</a>` : ''}${id === 'functions-and-signals' ? ' <a class="lib-link" href="./assets/direction/guard-cue.wav" download>GuardSound WAV ↓</a>' : ''}</p><ol><li><b>Create.</b> ${esc(make)}${stepImage(id,0)}</li><li><b>Attach.</b> ${esc(attach)}${stepImage(id,1)}</li><li><b>Revise and test.</b> ${esc(tune)}${stepImage(id,2)}</li></ol>${comparison(id)}${source ? `<p><a class="lib-link" href="${esc(source[1])}" target="_blank" rel="noopener">${esc(source[0])} ↗</a></p>` : ''}</details>`;
+  return `<details class="direction-workshop"><summary>Direction workshop · ${esc(title)}</summary><p><a class="lib-link" href="./downloads/battle-lab.zip" download>Reference Godot project ↓</a>${rig ? ` <a class="lib-link" href="./assets/${rig[0]}" download>${rig[1]} Blender file ↓</a>` : ''}${id === 'functions-and-signals' ? ' <a class="lib-link" href="./assets/direction/guard-cue.wav" download>GuardSound WAV ↓</a>' : ''}</p>${liveTuner(id)}<ol><li><b>Create.</b> ${esc(make)}${stepImage(id,0)}</li><li><b>Attach.</b> ${esc(attach)}${stepImage(id,1)}</li><li><b>Revise and test.</b> ${esc(tune)}${stepImage(id,2)}</li></ol>${comparison(id)}${source ? `<p><a class="lib-link" href="${esc(source[1])}" target="_blank" rel="noopener">${esc(source[0])} ↗</a></p>` : ''}</details>`;
 }

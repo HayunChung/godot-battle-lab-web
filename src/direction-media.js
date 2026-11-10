@@ -110,8 +110,8 @@ export function comparison(id) {
   return prefix + `<div class="cue-pair" style="--frame-x:${initial%4*100/3}%;--frame-y:${Math.floor(initial/4)*50}%;--cue-ratio:${ratio}"><div class="cue-options" role="group" aria-label="Comparison view">${['Both','Before','After'].map((label,i)=>`<button type="button" class="secondary" data-cue-view="${i}" aria-pressed="${i===0}">${label}</button>`).join('')}</div><div class="cue-samples">${[before,after].map((value,i)=>`<figure><figcaption><b>${i?'After':'Before'}</b> · ${esc(value)}</figcaption><div role="img" aria-label="${esc(value)}" class="cue-frame ${still?'cue-still':''}" style="background-image:url('${folder}${name}-${i}.webp')"></div></figure>`).join('')}</div>${still?'':`<label class="cue-time">Compare at the same time <input type="range" min="0" max="11" step="1" value="${initial}" aria-label="Comparison time"><output>${(initial/8).toFixed(3)} s</output></label><button type="button" class="secondary" data-cue-play>Replay both</button>`}</div></section>`;
 }
 
-export function bindComparison(container) {
-  bindTuner(container);
+export function bindComparison(container,locations) {
+  bindTuner(container,locations);
   const panel = container.querySelector('.cue-pair');
   const range = panel?.querySelector('input');
   for (const button of panel?.querySelectorAll('[data-cue-view]') || []) {

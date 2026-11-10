@@ -1,3 +1,4 @@
+import directionLocations from './direction-locations.js';
 import {bindComparison} from './direction-media.js';
 import {directionWorkshop} from "./direction-workshops.js";
 import {screenshot} from './screenshot.js';
@@ -181,7 +182,7 @@ function render(){
  closeArena=mountDuelLab(app) || mountMenuPractice(app) || mountArena(app);
  if(r.lesson?.id==='shared-stamina')app.querySelector('[data-explain="attack-cost"]').open=true;
  if(r.lesson?.guide==='roll')app.querySelector('.roll-panel').open=true;
- bindComparison(app);
+ bindComparison(app,directionLocations);
  refreshSim(app.querySelector('[data-sim]'));
  if(changed&&r.section!=='dashboard')document.querySelector('#content').focus({preventScroll:true});
 }

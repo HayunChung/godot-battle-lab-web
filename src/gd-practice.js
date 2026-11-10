@@ -166,6 +166,27 @@ function execute(tree,inputs,signal,allowReturn=false){
   catch(e){if(e===returned)return {output,events,visits,returned};e.output=output;throw e;}
 }
 export const challenges={
+ 'pvp-ready-room':{
+   title:'Gate the arena on both pilots',signature:'func check_ready(p1_ready: bool, p2_ready: bool) -> void:',
+   prompt:'Print "Load" only when both pilots have accepted. Print "Wait" for every other combination.',
+   starter:'if p1_ready:\n    print("Load")\nelse:\n    print("Wait")',
+   cases:[false,true].flatMap(p1_ready=>[false,true].map(p2_ready=>({inputs:{p1_ready,p2_ready},expected:[p1_ready && p2_ready?'Load':'Wait']}))),
+   hint:'Combine the two slot values with and.'
+ },
+ 'pvp-loading':{
+   title:'Choose the loading screen action',signature:'func show_status(status: String) -> void:',
+   prompt:'The loader reports "loading", "loaded", or "failed". Print "Progress", "Enter", or "Retry" for the corresponding report.',
+   starter:'if status == "loaded":\n    print("Enter")\nelse:\n    print("Progress")',
+   cases:[['loading','Progress'],['loaded','Enter'],['failed','Retry']].map(([status,action])=>({inputs:{status},expected:[action]})),
+   hint:'Inside the else branch, test for a failed load before showing progress.'
+ },
+ 'pvp-results':{
+   title:'Choose the result panel',signature:'func show_result(p1_wins: int, p2_wins: int, target: int) -> void:',
+   prompt:'Print "Match result" if either player reaches the target. Otherwise print "Next round". Test different scores and targets.',
+   starter:'if p1_wins >= target:\n    print("Match result")\nelse:\n    print("Next round")',
+   cases:[[1,1,2],[2,0,2],[0,2,2],[2,2,3],[0,1,1]].map(([p1_wins,p2_wins,target])=>({inputs:{p1_wins,p2_wins,target},expected:[Math.max(p1_wins,p2_wins)>=target?'Match result':'Next round']})),
+   hint:'Compare both scores against the same target and combine the comparisons with or.'
+ },
  'attack-cost':{preview:'stamina',inputs:{},starter:'var shot_cost: float = 15.0\nreturn shot_cost'},
  'roll-cost':{preview:'stamina',inputs:{},starter:'var roll_cost: float = 40.0\nreturn roll_cost'},
  'stamina-regen':{preview:'stamina',inputs:{},starter:'var points_per_second: float = 20.0\nreturn points_per_second'},

@@ -1,9 +1,11 @@
+import {matchReadings} from './match-flow-lessons.js';
 import {duelReadings} from './duel-lessons.js';
 import {gameFlowReadings} from './game-flow-lessons.js';
 // Scene and import settings below can be inspected in Godot. GDScript entries are executable lines.
 const line = (code, meaning) => ({ code, meaning });
 
 export const lessonReadings = {
+  ...Object.fromEntries(Object.entries(matchReadings).map(([id,lines])=>[id,{file:'res://scripts/match_flow.gd',lines}])),
   ...duelReadings,
   ...gameFlowReadings,
   'editor-tour': {

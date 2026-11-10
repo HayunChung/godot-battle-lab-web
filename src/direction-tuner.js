@@ -49,7 +49,14 @@ async function exportProject(settings,kind,source) {
   if(!response.ok)throw Error('The project could not be loaded. Try again.');
   const files=zip.unzipSync(new Uint8Array(await response.arrayBuffer()));
   tuneProject(files,settings,kind);
-  files['MY-WORKSHOP.md']=zip.strToU8(portableLesson(lessonRecord(kind,settings[keyFor(kind)],source)));
+  const record=lessonRecord(kind,settings[keyFor(kind)],source);
+  await Promise.all(record.photos.map(async ({filename})=>{
+    const photo=await fetch('./assets/direction-editor/'+filename);
+    if(!photo.ok)throw Error('A workshop screenshot could not be loaded. Try the download again.');
+    files['workshop-images/'+filename]=new Uint8Array(await photo.arrayBuffer());
+  }));
+  files['workshop-images/.gdignore']=new Uint8Array();
+  files['MY-WORKSHOP.md']=zip.strToU8(portableLesson(record));
   const link=document.createElement('a');
   link.href=URL.createObjectURL(new Blob([zip.zipSync(files)],{type:'application/zip'}));
   link.download='battle-lab-my-direction.zip';

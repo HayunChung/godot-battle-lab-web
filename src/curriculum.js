@@ -1,3 +1,4 @@
+import {matchLessons} from './match-flow-lessons.js';
 import {duelModule} from './duel-lessons.js';
 import {gameFlow} from './game-flow-lessons.js';
 import {workshop} from './workshop.js';
@@ -63,7 +64,7 @@ export const modules = [
   },
   {
     title: 'GDScript for Visual Minds',
-    description: 'Learn to read a script, change a value, send an event, and predict a decision.',
+    description: 'Read variables, signals and decisions, then use them to build a playable match from ready check to rematch.',
     lessons: [
       {
         id: 'variables', title: 'Turn a number into a control', minutes: 12,
@@ -115,6 +116,7 @@ export const modules = [
         walkthrough: [read('[0, 2, 1]', 'Brackets build an array; commas separate its elements. The first element is at index 0.'), read('for hp in health_values:', 'The loop variable temporarily holds the next element. A colon starts the indented instructions to repeat.'), read('if hp > 0:', 'The comparison returns a bool. Godot executes this branch only when the comparison is true.'), read('else:', 'Use the same indentation as if. Its body executes for this element when the comparison is false.')],
         files: ['practice/targets.gd', 'practice/guard.gd', 'practice/guard.tscn'],
       },
+      ...matchLessons,
     ],
   },
   {

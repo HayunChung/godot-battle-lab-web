@@ -1,5 +1,6 @@
 import {parameters} from './direction-values.js';
 import {esc} from './ui.js';
+import {screenshot} from './screenshot.js';
 
 // Each anchor is resolved against the tuned project files during the site build.
 export const editorLessons = {
@@ -83,7 +84,7 @@ export const editorLessons = {
 
 export function lessonRecord(kind,value,source) {
   const key=kind==='network'?'ring':kind;
-  const [label,unit,min,max,,,,,property,start]=parameters[key];
+  const [label,unit,min,max,,initial,,,property,start]=parameters[key];
   const lesson=editorLessons[kind];
   const fmt=n=>String(n)+(unit?' '+unit:'');
   const threshold=kind==='guard'?0.25:(min+max)/2;
@@ -101,7 +102,22 @@ export function lessonRecord(kind,value,source) {
     ['Make one edit',`Return to res://${source.file}. Select ${source.tree} again, click the numeric field for ${lesson.field}, enter ${other}, then press Enter. Save the scene with Ctrl+S (⌘S on Mac).`],
     ['Check the difference',`Press F5 and repeat the same action. ${lesson.effect} Press F8. To match your web preview again, set ${lesson.field} back to ${value}, save and run once more.`]
   ];
-  return {label,assignment,steps,source,why:lesson.why};
+  const exampleEdit=initial<threshold?max:min;
+  const photoNames=['import',kind+'-pick',kind+'-code',kind+'-before',kind+'-edit',kind+'-compare'];
+  const captions=[
+    'In the Godot Project Manager, click the outlined Import button.',
+    `Select ${source.tree} in the Scene dock (teal). In Inspector, filter for ${lesson.field.split(' → ').at(-1)} and find the outlined row (gold). Example capture: ${fmt(initial)}. Your copy opens with ${fmt(value)}.`,
+    source.reads.length
+      ? source.reads.map(r=>`Open res://${r.file} at line ${r.line}.`).join(' ')+' The outline marks the code to read.'
+      : `Godot reads this built-in field directly. Match the outlined ${lesson.field} field to ${property} in the scene.`,
+    'Click the outlined Run Project triangle or press F5. The game view below shows the example playtest.',
+    `Click the number inside the gold outline, type ${other}, press Enter and save. The example capture shows ${fmt(exampleEdit)}.`,
+    kind==='audio'
+      ? `Both captures show a successful guard. Listen in Godot at ${fmt(value)}, then ${fmt(other)} to compare the volume.`
+      : `Example playtest at the same point with ${fmt(initial)} and ${fmt(exampleEdit)}. Repeat the action above with your own values.`
+  ];
+  const photos=photoNames.map((name,i)=>({filename:name+'.webp',caption:captions[i]}));
+  return {label,assignment,steps,source,why:lesson.why,photos};
 }
 
 export function sourceView(record) {
@@ -112,7 +128,10 @@ export function sourceView(record) {
 }
 
 export function editorSteps(record) {
-  return '<h5>Try it in the downloaded project</h5><ol>'+record.steps.map(([title,body])=>`<li><b>${esc(title)}.</b> ${esc(body)}</li>`).join('')+'</ol>';
+  return '<h5>Try it in the downloaded project</h5><ol>'+record.steps.map(([title,body],i)=>{
+    const {filename,caption}=record.photos[i];
+    return `<li><p><b>${esc(title)}.</b> ${esc(body)}</p>${screenshot('./assets/direction-editor/'+filename,caption,true)}</li>`;
+  }).join('')+'</ol>';
 }
 
 export function portableLesson(record) {
@@ -120,5 +139,5 @@ export function portableLesson(record) {
   return [`# ${label} — Godot editor practice`,`res://${source.file}, line ${source.line} · ${source.tree}`,
     '~~~ini\n'+source.header+'\n'+assignment+'\n~~~',why,
     ...source.reads.map(r=>`res://${r.file}, line ${r.line} · ${r.func}()\n\n~~~gdscript\n${r.code}\n~~~`),
-    ...steps.map(([title,body],i)=>`${i+1}. **${title}.** ${body}`)].join('\n\n')+'\n';
+    ...steps.map(([title,body],i)=>`${i+1}. **${title}.** ${body}\n\n   ![${record.photos[i].caption}](workshop-images/${record.photos[i].filename})\n\n   ${record.photos[i].caption}`)].join('\n\n')+'\n';
 }

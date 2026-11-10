@@ -87,5 +87,5 @@ lessonShots['roll-stamina'] = {rebalance:['course-shots/roll-stamina-rebalance',
 lessonShots['shared-stamina'] = {price:['course-shots/shared-stamina-price', 'Browser editor · shot_cost holds 20.0 and return hands that cost to the arena for each attack.']};
 
 export function stepShot(lessonId, step) {
-  return lessonShots[lessonId]?.[step.id] ?? [step.image, workshopCaptions[lessonId]?.[step.id]];
+  return lessonShots[lessonId]?.[step.id] ?? [step.image, step.caption ?? workshopCaptions[lessonId]?.[step.id]];
 }

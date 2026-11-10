@@ -5,6 +5,7 @@ import {screenshot} from './screenshot.js';
 
 const roles=['host','guest'];
 const names={host:'Host · P1',guest:'Guest · P2'};
+const stepLabels=new Map(lesson.steps.map((s,i)=>[s.id,(i+1)+'. '+s.title]));
 const endpoint=location.origin===new URL(PUBLIC).origin?ORIGINAL+'/api/duel-room':'/api/duel-room';
 const roomPath=room=>'#/duel-room/'+room;
 const memory=new Map();
@@ -46,10 +47,10 @@ export function roomPage(){
   <p><a class="lib-link" href="./downloads/battle-lab.zip" download>Download the Godot project ↓</a></p>
   <div class="room-role-picker">${roles.map(role=>`<button class="secondary" data-claim="${role}" disabled>Choose ${names[role]}</button>`).join(' ')} <button class="secondary" data-release hidden>Release my role</button></div>
   <p data-room-status role="status">Connecting to the room…</p></section>
-  <section class="panel"><h2>Run the duel together</h2><p data-room-total>0 of ${lesson.steps.length} checkpoints confirmed by both players</p>
-  ${lesson.steps.map((step,i)=>`<details class="room-step" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small></summary>
-  <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${role==='host'?'Host':'Guest'} confirmed</label></div>`).join('')}</div>
-  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p></details>`).join('')}</section></div>`;
+  <section class="panel"><h2>Run the duel together</h2><div class="room-presence">${roles.map(r=>`<p><strong>${names[r]}</strong> <span data-viewing="${r}">Waiting for player</span></p>`).join('')}</div><p>Open a step to compare screens. When both players are on that step and confirm it, both checklists open the next one.</p><p data-room-total>0 of ${lesson.steps.length} checkpoints confirmed by both players</p>
+  ${lesson.steps.map((step,i)=>`<details class="room-step" data-step-id="${step.id}" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small> <small data-readers></small></summary>
+  <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${role==='host'?'Host':'Guest'} confirmed</label><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p></div>`).join('')}</div>
+  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden><label>What differed on your screen?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label><button class="secondary" data-save-note="${step.id}">Share difference</button><p>Sharing clears your confirmation for this step. Compare the notes, retest, then confirm when your result matches.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
 }
 
 export function mountRoom(root,room){
@@ -59,6 +60,7 @@ export function mountRoom(root,room){
   const link=root.querySelector('[data-room-link]');
   link.value=location.href;
   const call=(action,fields={})=>request({room,ticket,action,...fields});
+  let displayed=null;
   function paint(){
     if(!latest||!active)return;
     for(const b of root.querySelectorAll('[data-claim]')){
@@ -73,11 +75,39 @@ export function mountRoom(root,room){
         ? pendingCheck.checked : !!latest.checks[box.dataset.roomRole][box.dataset.id];
       box.disabled=busy||latest.role!==box.dataset.roomRole;
     }
+    for(const role of roles){
+      const label=root.querySelector('[data-viewing="'+role+'"]');
+      const recent=Date.now()-latest.seen[role]<45000;
+      label.textContent=!latest.occupied[role]?'Waiting for player':(recent?'Viewing ':'Last viewed ')+stepLabels.get(latest.views[role]);
+    }
+    const selected=latest.role && latest.views[latest.role];
+    if(selected && selected!==displayed){
+      const moving=displayed!==null;
+      for(const panel of root.querySelectorAll('[data-step-id]')){
+        panel.open=panel.dataset.stepId===selected;
+        if(panel.open && moving)panel.querySelector('summary').scrollIntoView({block:'start'});
+      }
+      displayed=selected;
+    }
+    if(!selected)displayed=null;
+    for(const node of root.querySelectorAll('[data-observation]')){
+      const role=node.dataset.observation,step=node.dataset.id,note=latest.notes[role][step];
+      node.textContent=note?(latest.checks[role][step]?'Retested · ':'Difference · ')+note:'';
+      node.hidden=!note;
+    }
+    for(const form of root.querySelectorAll('[data-note-form]')){
+      form.hidden=!latest.role;
+      form.querySelector('button').disabled=busy||!form.querySelector('textarea').value.trim();
+    }
     let complete=0;
     for(const node of root.querySelectorAll('[data-marks]')){
       const checked=roles.filter(r=>latest.checks[r][node.dataset.marks]);
       if(checked.length===2)complete++;
-      node.textContent=checked.length===2?'Both confirmed':checked.map(r=>names[r]+' confirmed').join('');
+      const step=node.dataset.marks;
+      const readers=roles.filter(r=>latest.occupied[r] && Date.now()-latest.seen[r]<45000 && latest.views[r]===step);
+      node.parentElement.querySelector('[data-readers]').textContent=readers.length?'Viewing: '+readers.map(r=>names[r]).join(' + '):'';
+      const differences=roles.filter(r=>latest.notes[r][step]&&!latest.checks[r][step]);
+      node.textContent=checked.length===2?'Both confirmed':[...checked.map(r=>names[r]+' confirmed'),...differences.map(r=>names[r]+' reported a difference')].join(' · ');
     }
     root.querySelector('[data-room-total]').textContent=complete+' of '+lesson.steps.length+' checkpoints confirmed by both players';
   }
@@ -97,11 +127,26 @@ export function mountRoom(root,room){
   async function change(action,fields){
     if(busy)return;
     busy=true;pendingCheck=action==='check'?fields:null;paint();status.textContent='Saving…';
-    try{accept(await call(action,fields));if(active)status.textContent=readyMessage();}
+    try{accept(await call(action,fields));if(active)status.textContent=readyMessage();return true;}
     catch(e){if(active){status.textContent='Change unconfirmed. '+e.message;try{accept(await call('read'));}catch{}}}
     finally{pendingCheck=null;busy=false;paint();}
   }
   root.onclick=async e=>{
+    const summary=e.target.closest('.room-step > summary');
+    if(summary && latest?.role){
+      e.preventDefault();
+      const step=summary.parentElement.dataset.stepId;
+      if(step!==displayed)await change('view',{role:latest.role,step,advance:latest.advance});
+      return;
+    }
+    const save=e.target.closest('[data-save-note]');
+    if(save && latest?.role){
+      const form=save.closest('[data-note-form]'),input=form.querySelector('textarea'),text=input.value;
+      const success=await change('note',{role:latest.role,step:save.dataset.saveNote,text});
+      if(success && input.value===text)input.value='';
+      form.querySelector('[data-note-status]').textContent=success?'Difference shared.':'Could not confirm the save. Your draft is here to retry.';
+      paint();return;
+    }
     if(e.target.closest('[data-room-copy]')){
       try{await navigator.clipboard.writeText(link.value);status.textContent='Room link copied.';}catch{link.select();status.textContent='Copy the selected room link.';}
     }
@@ -109,9 +154,13 @@ export function mountRoom(root,room){
     if(claim)change('claim',{role:claim.dataset.claim});
     if(e.target.closest('[data-release]')&&latest?.role)change('release',{role:latest.role});
   };
+  root.oninput=e=>{
+    const form=e.target.closest('[data-note-form]');
+    if(form){form.querySelector('button').disabled=busy||!e.target.value.trim();form.querySelector('[data-note-status]').textContent='';}
+  };
   root.onchange=e=>{
     const box=e.target;
-    if(box.dataset.roomRole)change('check',{role:box.dataset.roomRole,step:box.dataset.id,checked:box.checked});
+    if(box.dataset.roomRole)change('check',{role:box.dataset.roomRole,step:box.dataset.id,checked:box.checked,advance:latest.advance});
   };
   read();
   const timer=setInterval(read,1000);

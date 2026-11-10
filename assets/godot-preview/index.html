@@ -6,6 +6,7 @@ const statusLabel=document.querySelector('#status');
 window.directionRevision=0;
 window.directionRequest=decodeURIComponent(location.hash.slice(1));
 window.configureDirection=request=>{window.directionRequest=JSON.stringify(request);window.directionRevision++;};
+if(JSON.parse(window.directionRequest||'{}').kind==='hit-feedback')document.querySelector('#game').style.pointerEvents='auto';
 const nativeFetch=window.fetch.bind(window);
 window.fetch=async function(url,options){
   if(!String(url).endsWith('godot.wasm'))return nativeFetch(url,options);

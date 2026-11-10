@@ -1,5 +1,6 @@
 import {stepImage, comparison, liveTuner} from './direction-media.js';
 import {esc} from './ui.js';
+import {effectsConnections} from './effects-connections.js';
 
 const smash = ['Nintendo · Perfect Shield', 'https://www.smashbros.com/en_US/howtoplay/technique.html'];
 const valorant = ['Riot Games · The State of Hit Registration', 'https://playvalorant.com/en-gb/news/dev/the-state-of-hit-registration/'];
@@ -88,7 +89,7 @@ const workshops = {
 
 export function directionWorkshop(id) {
   const lesson = workshops[id];
-  if (!lesson) return '';
+  if (!lesson) return effectsConnections(id);
   const [title, make, attach, tune, source] = lesson;
   const rig = {
     'player-attack-animation': ['character-guide/Beacon-Pilot.blend','Beacon Pilot'],

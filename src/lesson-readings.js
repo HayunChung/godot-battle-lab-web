@@ -1,3 +1,4 @@
+import {effectsReadings} from './effects-module.js';
 import {matchReadings} from './match-flow-lessons.js';
 import {duelReadings} from './duel-lessons.js';
 import {gameFlowReadings} from './game-flow-lessons.js';
@@ -6,6 +7,7 @@ const line = (code, meaning) => ({ code, meaning });
 
 export const lessonReadings = {
   ...Object.fromEntries(Object.entries(matchReadings).map(([id,lines])=>[id,{file:'res://scripts/match_flow.gd',lines}])),
+  ...effectsReadings,
   ...duelReadings,
   ...gameFlowReadings,
   'editor-tour': {

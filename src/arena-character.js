@@ -1,3 +1,4 @@
+import {filePicker,mountFilePicker} from './file-picker.js';
 import {readGlb} from './character-file.js';
 import {esc} from './ui.js';
 
@@ -20,7 +21,7 @@ export function characterControls(role='player'){
   };
   const attack=enemy?`${animationSelect('attack',true)}<div data-enemy-contact-controls hidden><label>Contact point in the attack<input type="range" min="0" max="1" step="0.001" value="0.5" data-enemy-contact></label><output data-enemy-contact-time></output><button type="button" class="secondary" data-enemy-pose>Show contact pose</button><p>Scrub until the striking limb reaches its target. Damage is checked once at that pose.</p></div><a class="lib-link" href="#/enemy-attack">Enemy attack timing guide →</a>`:`${animationSelect('attack',true)}<div data-release-controls hidden><label>Release time (seconds)<input type="range" min="0" step="0.001" data-release></label><output data-release-time></output><button type="button" class="secondary" data-pose>Show release pose</button></div><a class="lib-link" href="#/attack">Attack animation screenshot guide →</a>`;
   return `<details class="${enemy?'enemy-controls':'hero-controls'}" data-character-role="${role}"><summary>${enemy?'Use a Blender enemy':'Use my Blender character'}</summary><p>Choose a local GLB with idle and walk clips. Hook up optional attack, hit, ${enemy?'and death':'death, and roll'} clips for this ${enemy?'enemy':'player'}. Your tuned kit includes the selected model.</p><a class="lib-link" href="#/character">Blender-to-arena screenshot guide →</a>
-  <label>${enemy?'Enemy GLB':'Character GLB'}<input type="file" accept=".glb,model/gltf-binary" ${attr('file')}></label><button class="secondary" ${attr('demo')}>Try the example ${enemy?'enemy':'character'}</button>
+  ${filePicker(enemy?'Enemy GLB':'Character GLB','.glb,model/gltf-binary',attr('file'))}<button class="secondary" ${attr('demo')}>Try the example ${enemy?'enemy':'character'}</button>
   <div ${attr('picker')} hidden><div class="hero-thumbnail" ${dataName(role,'model-view')}></div>${animationSelect('idle')}${animationSelect('walk')}${attack}${animationSelect('hit',true)}${animationSelect('death',true)}${enemy?'':animationSelect('roll',true)}<label>${prefix}Facing correction<select ${attr('turn')}><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label><button class="secondary" ${attr('reset')}>Restore ${enemy?'sentinel':'scout'}</button></div><p ${attr('status')} role="status"></p></details>`;
 }
 
@@ -28,6 +29,7 @@ export function mountCharacter(el,redraw,pause,role='player'){
   const enemy=role==='enemy',panel=el.querySelector('[data-character-role="'+role+'"]');
   const actorField=key=>panel.querySelector('['+actorName(role,key)+']');
   const picker=actorField('picker'),status=actorField('status'),file=actorField('file');
+  const resetFile=mountFilePicker(file);
   const slots=['idle','walk','attack','hit','death'];
   if(!enemy)slots.push('roll');
   const optional=slots.slice(2);
@@ -69,7 +71,7 @@ export function mountCharacter(el,redraw,pause,role='player'){
   }
   function reset(){
     pause();revision++;delete status.dataset.busy;view?.dispose();view=null;model=null;remembered.delete(role);
-    thumbnail.replaceChildren();picker.hidden=true;file.value='';status.textContent=enemy?'Sentinel restored.':'Scout restored.';redraw();
+    thumbnail.replaceChildren();picker.hidden=true;resetFile();status.textContent=enemy?'Sentinel restored.':'Scout restored.';redraw();
   }
   async function load(getBytes,name,previous){
     pause();const ticket=++revision;status.dataset.busy='true';status.textContent='Opening '+name+'…';
@@ -102,7 +104,7 @@ export function mountCharacter(el,redraw,pause,role='player'){
       status.textContent=name+' is ready. '+(enemy?'Practice a swing to test the attack. Land a shot to see the hit reaction.':'Start battle and use WASD to switch from idle to walk.');
       redraw();
     }catch(e){
-      if(ticket===revision){status.textContent=e.message+' Current character: '+(model?.name||(enemy?'sentinel':'scout'))+'.';file.value='';}
+      if(ticket===revision){status.textContent=e.message+' Current character: '+(model?.name||(enemy?'sentinel':'scout'))+'.';resetFile();}
     }finally{if(ticket===revision)delete status.dataset.busy;}
   }
   file.addEventListener('change',()=>{
@@ -110,10 +112,14 @@ export function mountCharacter(el,redraw,pause,role='player'){
     if(f.size>64*1024*1024){status.textContent='Use a game-ready GLB smaller than 64 MB.';return;}
     load(()=>f.arrayBuffer(),f.name);
   });
-  actorField('demo').addEventListener('click',()=>load(async()=>{
-    const r=await fetch(enemy?'./assets/reactions-guide/enemy.glb':'./assets/character-guide/hero.glb');
-    if(!r.ok)throw Error('Could not open the example GLB.');return r.arrayBuffer();
-  },enemy?'Example enemy':'Example hero'));
+  actorField('demo').addEventListener('click',()=>{
+    resetFile();
+    load(async()=>{
+      const r=await fetch(enemy?'./assets/reactions-guide/enemy.glb':'./assets/character-guide/hero.glb');
+      if(!r.ok)throw Error('Could not open the example GLB.');
+      return r.arrayBuffer();
+    },enemy?'Example enemy':'Example hero');
+  });
   function previewStrike(){
     if(!model||model.attack<0)return;
     pause();

@@ -1,3 +1,4 @@
+import {filePicker,mountFilePicker} from './file-picker.js';
 import {newRound, tickRound, paint} from './final-arena.js';
 
 const keys = {KeyW:'W', KeyA:'A', KeyS:'S', KeyD:'D', Space:'Fire', ShiftLeft:'Roll'};
@@ -6,7 +7,7 @@ let largeHud = false;
 const settingKey = 'battle-lab.large-hud.v1';
 
 export function menuPractice() {
-  return '<section class="code-lab menu-practice" tabindex="-1"><h3>Test the game menu</h3><details class="appearance-controls"><summary>Try your own menu art</summary><p>Preview an image on the lobby, settings screen and training banner. The file stays in this browser tab.</p><label>Background image <input type="file" data-preview-art accept="image/png,image/jpeg,image/webp"></label><label><input type="checkbox" data-preview-sparks checked> Show drifting particles</label><button class="secondary" data-reset-art>Restore sample image</button><small data-art-message role="status"></small></details><div data-menu-screen></div></section>';
+  return '<section class="code-lab menu-practice" tabindex="-1"><h3>Test the game menu</h3><details class="appearance-controls"><summary>Try your own menu art</summary><p>Preview an image on the lobby, settings screen and training banner. The file stays in this browser tab.</p>'+filePicker('Background image','image/png,image/jpeg,image/webp','data-preview-art')+'<label><input type="checkbox" data-preview-sparks checked> Show drifting particles</label><button class="secondary" data-reset-art>Restore sample image</button><small data-art-message role="status"></small></details><div data-menu-screen></div></section>';
 }
 
 export function mountMenuPractice(app) {
@@ -14,6 +15,7 @@ export function mountMenuPractice(app) {
   if (!screen) return;
   try { largeHud = localStorage.getItem(settingKey) === 'true'; } catch {}
   const picker=app.querySelector('[data-preview-art]');
+  const resetFile=mountFilePicker(picker);
   const notice=app.querySelector('[data-art-message]');
   let customImage='';
   const clearImage=()=>{
@@ -34,7 +36,7 @@ export function mountMenuPractice(app) {
       notice.textContent='Showing '+file.name;
     }catch{URL.revokeObjectURL(url);notice.textContent='This image could not be opened. Try another file.';}
   };
-  app.querySelector('[data-reset-art]').onclick=()=>{picker.value='';clearImage();notice.textContent='Sample image restored.';};
+  app.querySelector('[data-reset-art]').onclick=()=>{resetFile();clearImage();notice.textContent='Sample image restored.';};
   app.querySelector('[data-preview-sparks]').onchange=e=>screen.classList.toggle('no-sparks',!e.target.checked);
   let frame, mode, round, step, previous, bank;
   const pressed = new Set();

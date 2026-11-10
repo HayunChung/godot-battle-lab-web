@@ -1,3 +1,4 @@
+import {effectsModule} from './effects-module.js';
 import {matchLessons} from './match-flow-lessons.js';
 import {duelModule} from './duel-lessons.js';
 import {gameFlow} from './game-flow-lessons.js';
@@ -258,4 +259,5 @@ export const modules = [
   workshop,
   gameFlow,
   duelModule,
+  effectsModule,
 ];

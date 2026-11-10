@@ -23,19 +23,23 @@ export function normalizeValues(input) {
 }
 
 const encoder = new TextEncoder(), decoder = new TextDecoder();
+export function setSceneProperty(files,path,node,property,value) {
+  const blocks=decoder.decode(files[path]).split(/(?=^\[)/m);
+  const index=blocks.findIndex(block=>block.startsWith('[node name="'+node+'" '));
+  if(index<0) throw Error('Missing '+path+' / '+node);
+  const lines=blocks[index].trimEnd().split('\n');
+  const existing=lines.findIndex(line=>line.startsWith(property+' = '));
+  const entry=property+' = '+value;
+  if(existing<0) lines.push(entry); else lines[existing]=entry;
+  blocks[index]=lines.join('\n')+'\n\n';
+  files[path]=encoder.encode(blocks.join(''));
+}
+
 export function tuneProject(files, values, lesson) {
   const settings=normalizeValues(values);
   for (const [key,[,,,,,,scene,node,property]] of Object.entries(parameters)) {
     const path=scene+'.tscn';
-    const blocks=decoder.decode(files[path]).split(/(?=^\[)/m);
-    const index=blocks.findIndex(block=>block.startsWith('[node name="'+node+'" '));
-    if(index<0) throw Error('Missing '+scene+' / '+node);
-    const lines=blocks[index].trimEnd().split('\n');
-    const existing=lines.findIndex(line=>line.startsWith(property+' = '));
-    const entry=property+' = '+settings[key];
-    if(existing<0) lines.push(entry); else lines[existing]=entry;
-    blocks[index]=lines.join('\n')+'\n\n';
-    files[path]=encoder.encode(blocks.join(''));
+    setSceneProperty(files,path,node,property,settings[key]);
   }
   const start=parameters[lesson==='network'?'ring':lesson][9];
   files['project.godot']=encoder.encode(decoder.decode(files['project.godot']).replace(/^run\/main_scene=.*$/m,'run/main_scene="res://'+start+'.tscn"'));

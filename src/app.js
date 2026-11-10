@@ -184,7 +184,7 @@ function render(){
    file.querySelector('pre code').innerHTML=readableCode(sources[path],!path.endsWith('.gd'),path);
    file.dataset.annotated='1';
  });
- if(r.section==='duel-room')closeRoom=mountRoom(app.querySelector('.duel-room'),location.hash.split('/')[2]||'');
+ if(r.section==='duel-room')closeRoom=mountRoom(app.querySelector('.duel-room'),location.hash.split('/')[2]||'',location.hash.split('/')[3]==='step'?location.hash.split('/')[4]:null);
  const qr=app.querySelector('[data-qr]');
  if(qr)import('../vendor/qrcode.mjs').then(({default:make})=>{const code=make(0,'M');code.addData(personalLink);code.make();qr.innerHTML=code.createSvgTag({scalable:true,alt:'Scan your personal progress link'});});
  const tracked=lessons.find(l=>l.guide===r.section);

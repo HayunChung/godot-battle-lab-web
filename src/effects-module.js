@@ -1,3 +1,4 @@
+import {rumbleLesson,rumbleReading} from './duel-rumble.js';
 import {duelEffectsLesson,duelEffectsReading} from './duel-effects-lesson.js';
 const scene = 'scenes/hit_feedback.tscn';
 const script = 'scripts/hit_feedback.gd';
@@ -114,7 +115,8 @@ export const effectsModule = {
   ]
 };
 
-effectsModule.lessons.push(duelEffectsLesson);
+effectsModule.lessons.push(duelEffectsLesson,rumbleLesson);
+effectsReadings[rumbleLesson.id] = rumbleReading;
 effectsReadings[duelEffectsLesson.id] = duelEffectsReading;
 for(const lesson of effectsModule.lessons){
   lesson.walkthrough = effectsReadings[lesson.id].lines.map(({code,meaning})=>({line:code,explanation:meaning}));

@@ -2,7 +2,12 @@ import {setSceneProperty} from './direction-values.js';
 
 const flatScene = 'scenes/hit_feedback.tscn';
 const duelScene = 'scenes/duel_hit.tscn';
-const fields = [
+const matchScene = 'scenes/duel.tscn';
+const rumbleFields = [
+  {node:'HitRumble',property:'strength',label:'Rumble strength',min:0,max:1,step:0.05,initial:0.55},
+  {node:'HitRumble',property:'duration',label:'Pulse duration (seconds)',min:0.05,max:1,step:0.01,initial:0.18}
+];
+const visualFields = [
   {node:'Burst', property:'amount', label:'Particle count', min:1, max:64, step:1, initial:12},
   {node:'Burst', property:'lifetime', label:'Particle lifetime (seconds)', min:0.1, max:1.5, step:0.05, initial:0.35},
   {node:'AnimationPlayer', property:'speed_scale', label:'Animation playback speed (×)', min:0.25, max:2, step:0.05, initial:1},
@@ -10,13 +15,15 @@ const fields = [
 const storageKey = 'battle-lab.hit-feedback.v1';
 
 export function effectsPreview(id) {
-  const duel=id==='duel-hit-effects';
-  const scene=duel?duelScene:flatScene;
-  return `<details class="trouble effects-preview"><summary>Preview and tune the hit in Godot</summary><div class="cue-tuner">
-  <p>${duel?'Replay a pulse hitting P2 in the actual duel scene.':'Run the preview and click the hexagon, then the empty floor.'} Change one setting and replay the hit.</p>
+  const rumble=id==='duel-hit-rumble';
+  const duel=id==='duel-hit-effects' || rumble;
+  const scene=rumble?matchScene:duel?duelScene:flatScene;
+  const fields=rumble?rumbleFields:visualFields;
+  return `<details class="trouble effects-preview"><summary>${rumble?'Tune and download your vibration settings':'Preview and tune the hit in Godot'}</summary><div class="cue-tuner">
+  <p>${rumble?'Set the values to use on your controller in the downloaded Godot project.':duel?'Replay a pulse hitting P2 in the actual duel scene.':'Run the preview and click the hexagon, then the empty floor.'} ${rumble?'Use the two-computer exercise to feel the difference.':'Change one setting and replay the hit.'}</p>
   ${fields.map(f=>`<label class="tuner-control">${f.label} <output></output><input type="range" data-effect="${f.property}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.initial}"></label>`).join('')}
-  <div class="live-stage"></div><button type="button" class="secondary" data-effect-play>Run Godot preview</button>
-  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
+  ${rumble?'':'<div class="live-stage"></div><button type="button" class="secondary" data-effect-play>Run Godot preview</button>'}
+  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${rumble?'Open <code>scripts/hit_rumble.gd</code> to see how the selected device uses these values.':duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
   <pre data-effect-source></pre>${duel?'<p>In Godot’s Script editor, use Go to Line (Ctrl+L or ⌘L) to follow one confirmed hit.</p><pre data-hit-code></pre>':''}<button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
   <p>The ZIP includes this lesson and its screenshots in <code>MY-EFFECTS-LESSON.md</code>.</p><p role="status"></p></div></details>`;
 }
@@ -24,9 +31,11 @@ export function effectsPreview(id) {
 export function mountEffectsPreview(app,lesson,sources) {
   const lab=app.querySelector('.effects-preview');
   if(!lab)return;
-  const duel=lesson.id==='duel-hit-effects';
+  const rumble=lesson.id==='duel-hit-rumble';
+  const duel=lesson.id==='duel-hit-effects' || rumble;
+  const fields=rumble?rumbleFields:visualFields;
   const kind=duel?'duel-hit':'hit-feedback';
-  const scene=duel?duelScene:flatScene;
+  const scene=rumble?matchScene:duel?duelScene:flatScene;
   const main=duel?'scenes/duel.tscn':flatScene;
   const sliders=[...lab.querySelectorAll('input[type=range]')];
   let saved={};
@@ -36,8 +45,8 @@ export function mountEffectsPreview(app,lesson,sources) {
     if(Number.isFinite(value))slider.value=String(value);
   }
   const settings=()=>Object.fromEntries(sliders.map(s=>[s.dataset.effect,s.valueAsNumber]));
-  const makeScene=(files,values,path)=>{
-    for(const f of fields)setSceneProperty(files,path,f.node,f.property,values[f.property]);
+  const makeScene=(files,values,path,properties=fields)=>{
+    for(const f of properties)setSceneProperty(files,path,f.node,f.property,values[f.property]);
   };
   function display(){
     const values=settings();
@@ -52,7 +61,10 @@ export function mountEffectsPreview(app,lesson,sources) {
     }).join('\n');
   }
   if(duel){
-    const calls=[
+    const calls=rumble?[
+      ['duel.gd','$HitRumble.play_hit(target, mode)'],
+      ['hit_rumble.gd','Input.start_joy_vibration(device, strength, strength, duration)']
+    ]:[
       ['duel.gd','_confirm_hit(target)'],
       ['duel_network.gd','hit_received.emit(target)'],
       ['duel.gd','pilots[target].get_node("HitFX").play_hit()'],
@@ -80,20 +92,20 @@ export function mountEffectsPreview(app,lesson,sources) {
     lab.querySelector('.live-stage').append(frame);
     play.textContent='Replay hit';
   }
-  play.onclick=preview;
+  if(play)play.onclick=preview;
   let timer;
   lab.oninput=()=>{
     display();
-    try { localStorage.setItem(storageKey,JSON.stringify(settings())); } catch {}
+    try { localStorage.setItem(storageKey,JSON.stringify({...saved,...settings()})); } catch {}
     clearTimeout(timer);
-    timer=setTimeout(preview,120);
+    if(play)timer=setTimeout(preview,120);
   };
   lab.ontoggle=()=>{
     if(!lab.open){
       clearTimeout(timer);
       frame?.remove();
       frame=null;
-      play.textContent='Run Godot preview';
+      if(play)play.textContent='Run Godot preview';
     }
   };
   const download=lab.querySelector('[data-effect-download]');
@@ -106,7 +118,14 @@ export function mountEffectsPreview(app,lesson,sources) {
       const [zip,response]=await Promise.all([import('../vendor/fflate.js'),fetch('./downloads/battle-lab.zip')]);
       if(!response.ok)throw Error();
       const files=zip.unzipSync(new Uint8Array(await response.arrayBuffer()));
-      for(const path of [flatScene,duelScene])makeScene(files,values,path);
+      // Carry settings from the other effect lesson into the same playable duel.
+      const allValues={...saved,...values};
+      for(const f of [...visualFields,...rumbleFields]){
+        const raw=allValues[f.property];
+        allValues[f.property]=Number.isFinite(raw)?Math.min(f.max,Math.max(f.min,raw)):f.initial;
+      }
+      for(const path of [flatScene,duelScene])makeScene(files,allValues,path,visualFields);
+      makeScene(files,allValues,matchScene,rumbleFields);
       const guide=['# '+lesson.title,'Open '+main+'. Press F6 to run and F8 to stop. Edit '+scene+' for these settings.',
         ...fields.map(f=>'- '+f.node+' → '+f.property+' = '+values[f.property])];
       for(const step of lesson.steps){
@@ -123,7 +142,7 @@ export function mountEffectsPreview(app,lesson,sources) {
       files['project.godot']=zip.strToU8(config);
       const link=document.createElement('a');
       link.href=URL.createObjectURL(new Blob([zip.zipSync(files)],{type:'application/zip'}));
-      link.download=duel?'battle-lab-duel-hit.zip':'battle-lab-hit-feedback.zip';
+      link.download=rumble?'battle-lab-hit-rumble.zip':duel?'battle-lab-duel-hit.zip':'battle-lab-hit-feedback.zip';
       link.click();
       setTimeout(()=>URL.revokeObjectURL(link.href),1000);
       status.textContent='Extract the ZIP, import project.godot, then press F5 to play your settings.';

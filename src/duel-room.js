@@ -55,7 +55,7 @@ export function roomPage(){
   <label>Room link <input data-room-link readonly></label> <button class="secondary" data-room-copy>Copy room link</button>
   <p><a class="lib-link" href="./downloads/battle-lab.zip" download>Download the Godot project ↓</a></p>
   <div class="room-role-picker">${roles.map(role=>`<button class="secondary" data-claim="${role}" disabled>Choose ${names[role]}</button>`).join(' ')} <button class="secondary" data-release hidden>Release my role</button></div>
-  <p data-room-status role="status">Connecting to the room…</p></section>
+  <p data-room-status role="status">Connecting to the room…</p><button type="button" class="secondary" data-report-pdf disabled>Download test report (PDF)</button> <span data-pdf-status role="status"></span></section>
   <section class="panel"><h2>Run the duel together</h2><div class="room-presence">${roles.map(r=>`<p><strong>${names[r]}</strong> <span data-viewing="${r}">Waiting for player</span></p>`).join('')}</div><p>Open a step to compare screens. When both players are on that step and confirm it, both checklists open the next one.</p><p data-room-total>0 of ${lesson.steps.length} checkpoints confirmed by both players</p>
   ${lesson.steps.map((step,i)=>`<details class="room-step" data-step-id="${step.id}" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small> <small data-readers></small></summary>
   <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${role==='host'?'Host':'Guest'} confirmed</label></div>`).join('')}</div>
@@ -75,8 +75,10 @@ export function mountRoom(root,room){
   const resetFiles=new Map();
   for(const form of root.querySelectorAll('[data-note-form]'))resetFiles.set(form,mountFilePicker(form.querySelector('[data-photo-input]')));
   let displayed=null,queuedView=null;
+  let exporting=false;
   function paint(){
     if(!latest||!active)return;
+    root.querySelector('[data-report-pdf]').disabled=exporting||busy;
     for(const b of root.querySelectorAll('[data-claim]')){
       const role=b.dataset.claim;
       b.textContent=latest.role===role?'You are '+names[role]:latest.occupied[role]?names[role]+' · taken':'Choose '+names[role];
@@ -196,6 +198,25 @@ export function mountRoom(root,room){
     }
   }
   root.onclick=async e=>{
+    if(e.target.closest('[data-report-pdf]')){
+      if(exporting||busy||!latest)return;
+      exporting=true;paint();
+      const message=root.querySelector('[data-pdf-status]');
+      const progress=text=>{message.textContent=text;};
+      try{
+        progress('Preparing shared test report…');
+        const [snapshot,{makeDuelReport}]=await Promise.all([call('read'),import('../vendor/duel-report.js')]);
+        const pdf=await makeDuelReport({steps:lesson.steps,snapshot,history:(step,number)=>call('history',{step,number}),photoUrl,room,progress});
+        if(active){
+          const url=URL.createObjectURL(pdf),a=document.createElement('a');
+          a.href=url;a.download='Godot-duel-'+room.slice(0,8)+'-'+new Date().toISOString().slice(0,10)+'.pdf';
+          document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+          progress('PDF downloaded.');
+        }
+      }catch{progress('Could not download the complete report. Check your connection and try again.');}
+      finally{exporting=false;paint();}
+      return;
+    }
     const summary=e.target.closest('.room-step > summary');
     if(summary && (latest?.role || busy)){
       e.preventDefault();

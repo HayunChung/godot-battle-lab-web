@@ -1,3 +1,4 @@
+import {testHistoryPanel,mountTestHistory} from './duel-test-history.js';
 import {filePicker,mountFilePicker} from './file-picker.js';
 import {screenshotForUpload} from './room-photo.js';
 import {pairChecklistLesson as lesson} from './duel-pair-checklist.js';
@@ -58,8 +59,8 @@ export function roomPage(){
   <section class="panel"><h2>Run the duel together</h2><div class="room-presence">${roles.map(r=>`<p><strong>${names[r]}</strong> <span data-viewing="${r}">Waiting for player</span></p>`).join('')}</div><p>Open a step to compare screens. When both players are on that step and confirm it, both checklists open the next one.</p><p data-room-total>0 of ${lesson.steps.length} checkpoints confirmed by both players</p>
   ${lesson.steps.map((step,i)=>`<details class="room-step" data-step-id="${step.id}" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small> <small data-readers></small></summary>
   <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${role==='host'?'Host':'Guest'} confirmed</label></div>`).join('')}</div>
-  <section data-comparison="${step.id}" hidden><h3>Compare Godot screens</h3><div class="room-screens">${roles.map(role=>`<div><b>${names[role]}</b><div data-room-photo="${role}">No screenshot shared</div><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p><p data-role-retest="${role}"></p></div>`).join('')}</div><p data-resolution role="status"></p><div data-retest-actions hidden><button class="secondary" data-retest="different">Still different</button> <button class="secondary" data-retest="resolved">Resolved on my screen</button></div></section>
-  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden><label>What differed on your screen?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label>${filePicker('Godot screenshot (PNG, JPEG or WebP, up to 20 MB)','image/png,image/jpeg,image/webp','data-photo-input')}<button class="secondary" data-save-note="${step.id}">Share difference</button><p>Share a note, a screenshot, or both. A new screenshot replaces your previous image for this step. After a new report, both players retest.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
+  <section data-comparison="${step.id}" hidden><h3>Compare Godot screens · <span data-current-test></span></h3><div class="room-screens">${roles.map(role=>`<div><b>${names[role]}</b><div data-room-photo="${role}">No screenshot shared</div><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p><p data-role-retest="${role}"></p></div>`).join('')}</div><p data-resolution role="status"></p><p data-first-resolved hidden></p><div data-retest-actions hidden><button class="secondary" data-retest="different">Still different</button> <button class="secondary" data-retest="resolved">Resolved on my screen</button></div>${testHistoryPanel(step.id)}</section>
+  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden><label>What did you see in Godot?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label>${filePicker('Godot screenshot (PNG, JPEG or WebP, up to 20 MB)','image/png,image/jpeg,image/webp','data-photo-input')}<label data-number-picker hidden>Save to <select data-target-test></select></label><button class="secondary" data-save-note="${step.id}">Share difference</button><p>Share a note, a screenshot, or both. Each player can share one report per test. Share your next capture in the next test to keep both versions. Both players use the same test numbers.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
 }
 
 export function mountRoom(root,room){
@@ -69,6 +70,8 @@ export function mountRoom(root,room){
   const link=root.querySelector('[data-room-link]');
   link.value=location.href;
   const call=(action,fields={})=>request({room,ticket,action,...fields});
+  const photoUrl=(step,r,id)=>endpoint.replace('/duel-room','/duel-photo')+'/'+[room,r,step,id].map(encodeURIComponent).join('/');
+  const drawHistory=mountTestHistory(root,call,photoUrl);
   const resetFiles=new Map();
   for(const form of root.querySelectorAll('[data-note-form]'))resetFiles.set(form,mountFilePicker(form.querySelector('[data-photo-input]')));
   let displayed=null,queuedView=null;
@@ -110,12 +113,17 @@ export function mountRoom(root,room){
       const step=section.dataset.comparison;
       section.hidden=!roles.some(r=>latest.notes[r][step]||latest.photos?.[r][step]);
       if(section.hidden)continue;
+      const current=(latest.archivedCounts?.[step]||0)+1;
+      section.querySelector('[data-current-test]').textContent='Test '+current;
+      const first=section.querySelector('[data-first-resolved]'),n=latest.firstResolved?.[step];
+      first.hidden=!n;first.textContent=n?'First resolved by both players in Test '+n:'';
+      void drawHistory(section.querySelector('[data-test-history]'),latest);
       for(const r of roles){
         const slot=section.querySelector('[data-room-photo="'+r+'"]'),id=latest.photos?.[r][step]||'';
         if((slot.dataset.photoId||'')!==id){
           slot.dataset.photoId=id;
           if(id){
-            const path=endpoint.replace('/duel-room','/duel-photo')+'/'+[room,r,step,id].map(encodeURIComponent).join('/');
+            const path=photoUrl(step,r,id);
             slot.innerHTML=screenshot(path,names[r]+' · '+stepLabels.get(step),true);
           }else slot.textContent='No screenshot shared';
         }
@@ -131,7 +139,20 @@ export function mountRoom(root,room){
     }
     for(const form of root.querySelectorAll('[data-note-form]')){
       form.hidden=!latest.role;
-      form.querySelector('[data-save-note]').disabled=busy||!(form.querySelector('textarea').value.trim() || form.querySelector('input').files.length);
+      if(!latest.role)continue;
+      const step=form.dataset.noteForm,current=(latest.archivedCounts?.[step]||0)+1,role=latest.role;
+      const existing=roles.some(r=>latest.notes[r][step]||latest.photos?.[r][step]);
+      const needsNext=!!(latest.notes[role][step]||latest.photos?.[role][step]) || roles.every(r=>latest.retests?.[r][step]==='resolved');
+      const target=form.querySelector('[data-target-test]'),choices=needsNext?[current+1]:existing?[current,current+1]:[current];
+      if(target.dataset.choices!==choices.join(',')){
+        // Keep an explicitly selected test if a partner starts it while this player is composing.
+        const previous=Number(target.value);
+        const stale=previous && !choices.includes(previous) && !busy && (form.querySelector('textarea').value.trim() || form.querySelector('input').files.length);
+        target.innerHTML=(stale?'<option value="" disabled>Test '+previous+' closed · choose a test</option>':'')+choices.map(n=>`<option value="${n}">Test ${n}</option>`).join('');
+        target.value=stale?'':String(choices.includes(previous)?previous:choices[0]);target.dataset.choices=choices.join(',');
+      }
+      form.querySelector('[data-number-picker]').hidden=false;
+      form.querySelector('[data-save-note]').disabled=busy||!form.querySelector('[data-target-test]').value||!(form.querySelector('textarea').value.trim() || form.querySelector('input').files.length);
     }
     let complete=0;
     for(const node of root.querySelectorAll('[data-marks]')){
@@ -143,7 +164,7 @@ export function mountRoom(root,room){
       const readers=roles.filter(r=>latest.occupied[r] && Date.now()-latest.seen[r]<45000 && latest.views[r]===step);
       node.parentElement.querySelector('[data-readers]').textContent=readers.length?'Viewing: '+readers.map(r=>names[r]).join(' + '):'';
       const differences=roles.filter(r=>latest.notes[r][step]&&!latest.checks[r][step]);
-      node.textContent=report?(done?'Resolved by both players':'Open · retest needed'):checked.length===2?'Both confirmed':[...checked.map(r=>names[r]+' confirmed'),...differences.map(r=>names[r]+' reported a difference')].join(' · ');
+      node.textContent=report?(done?'Resolved by both players · Test '+((latest.archivedCounts?.[step]||0)+1):'Open · retest needed'):checked.length===2?'Both confirmed':[...checked.map(r=>names[r]+' confirmed'),...differences.map(r=>names[r]+' reported a difference')].join(' · ');
     }
     root.querySelector('[data-room-total]').textContent=complete+' of '+lesson.steps.length+' checkpoints confirmed by both players';
   }
@@ -183,6 +204,8 @@ export function mountRoom(root,room){
       if(step!==displayed)await change('view',{role:latest.role,step,advance:latest.advance});
       return;
     }
+    const retry=e.target.closest('[data-history-retry]');
+    if(retry){void drawHistory(retry.closest('[data-test-history]'),latest,true);return;}
     const retest=e.target.closest('[data-retest]');
     if(retest && latest?.role){
       const step=retest.closest('[data-comparison]').dataset.comparison;
@@ -193,7 +216,7 @@ export function mountRoom(root,room){
     if(save && latest?.role){
       const form=save.closest('[data-note-form]'),input=form.querySelector('textarea'),text=input.value;
       const picker=form.querySelector('[data-photo-input]'),photo=picker.files[0];
-      const success=await change('note',{role:latest.role,step:save.dataset.saveNote,text,photo});
+      const success=await change('note',{role:latest.role,step:save.dataset.saveNote,number:Number(form.querySelector('[data-target-test]').value),text,photo});
       if(success && picker.files[0]===photo)resetFiles.get(form)();
       if(success && input.value===text)input.value='';
       form.querySelector('[data-note-status]').textContent=success?'Difference shared.':status.textContent+' Your draft is here to retry.';
@@ -208,10 +231,11 @@ export function mountRoom(root,room){
   };
   root.oninput=e=>{
     const form=e.target.closest('[data-note-form]');
-    if(form){form.querySelector('[data-save-note]').disabled=busy||!(form.querySelector('textarea').value.trim() || form.querySelector('input').files.length);form.querySelector('[data-note-status]').textContent='';}
+    if(form){form.querySelector('[data-save-note]').disabled=busy||!form.querySelector('[data-target-test]').value||!(form.querySelector('textarea').value.trim() || form.querySelector('input').files.length);form.querySelector('[data-note-status]').textContent='';}
   };
   root.onchange=e=>{
     const box=e.target;
+    if(box.closest('[data-test-history]')){void drawHistory(box.closest('[data-test-history]'),latest);return;}
     if(box.dataset.roomRole)change('check',{role:box.dataset.roomRole,step:box.dataset.id,checked:box.checked,reportVersion:latest.reportVersions?.[box.dataset.id]||0,advance:latest.advance});
   };
   read();

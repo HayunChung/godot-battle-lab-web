@@ -60,7 +60,7 @@ export function mountRoom(root,room){
   const link=root.querySelector('[data-room-link]');
   link.value=location.href;
   const call=(action,fields={})=>request({room,ticket,action,...fields});
-  let displayed=null;
+  let displayed=null,queuedView=null;
   function paint(){
     if(!latest||!active)return;
     for(const b of root.querySelectorAll('[data-claim]')){
@@ -129,13 +129,21 @@ export function mountRoom(root,room){
     busy=true;pendingCheck=action==='check'?fields:null;paint();status.textContent='Saving…';
     try{accept(await call(action,fields));if(active)status.textContent=readyMessage();return true;}
     catch(e){if(active){status.textContent='Change unconfirmed. '+e.message;try{accept(await call('read'));}catch{}}}
-    finally{pendingCheck=null;busy=false;paint();}
+    finally{
+      pendingCheck=null;busy=false;paint();
+      const next=queuedView;
+      queuedView=null;
+      if(active && next && latest?.role && latest.advance===next.advance && displayed!==next.step){
+        void change('view',{role:latest.role,...next});
+      }
+    }
   }
   root.onclick=async e=>{
     const summary=e.target.closest('.room-step > summary');
-    if(summary && latest?.role){
+    if(summary && (latest?.role || busy)){
       e.preventDefault();
       const step=summary.parentElement.dataset.stepId;
+      if(busy){queuedView={step,advance:latest.advance};return;}
       if(step!==displayed)await change('view',{role:latest.role,step,advance:latest.advance});
       return;
     }

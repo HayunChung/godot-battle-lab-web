@@ -1,6 +1,7 @@
 import {setSceneProperty} from './direction-values.js';
 
-const scene = 'scenes/hit_feedback.tscn';
+const flatScene = 'scenes/hit_feedback.tscn';
+const duelScene = 'scenes/duel_hit.tscn';
 const fields = [
   {node:'Burst', property:'amount', label:'Particle count', min:1, max:64, step:1, initial:12},
   {node:'Burst', property:'lifetime', label:'Particle lifetime (seconds)', min:0.1, max:1.5, step:0.05, initial:0.35},
@@ -8,19 +9,25 @@ const fields = [
 ];
 const storageKey = 'battle-lab.hit-feedback.v1';
 
-export function effectsPreview() {
+export function effectsPreview(id) {
+  const duel=id==='duel-hit-effects';
+  const scene=duel?duelScene:flatScene;
   return `<details class="trouble effects-preview"><summary>Preview and tune the hit in Godot</summary><div class="cue-tuner">
-  <p>Run the preview and click the hexagon, then the empty floor. Change one setting and replay the hit.</p>
+  <p>${duel?'Replay a pulse hitting P2 in the actual duel scene.':'Run the preview and click the hexagon, then the empty floor.'} Change one setting and replay the hit.</p>
   ${fields.map(f=>`<label class="tuner-control">${f.label} <output></output><input type="range" data-effect="${f.property}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.initial}"></label>`).join('')}
   <div class="live-stage"></div><button type="button" class="secondary" data-effect-play>Run Godot preview</button>
-  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.</p>
-  <pre data-effect-source></pre><button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
+  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
+  <pre data-effect-source></pre>${duel?'<p>In Godot’s Script editor, use Go to Line (Ctrl+L or ⌘L) to follow one confirmed hit.</p><pre data-hit-code></pre>':''}<button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
   <p>The ZIP includes this lesson and its screenshots in <code>MY-EFFECTS-LESSON.md</code>.</p><p role="status"></p></div></details>`;
 }
 
 export function mountEffectsPreview(app,lesson,sources) {
   const lab=app.querySelector('.effects-preview');
   if(!lab)return;
+  const duel=lesson.id==='duel-hit-effects';
+  const kind=duel?'duel-hit':'hit-feedback';
+  const scene=duel?duelScene:flatScene;
+  const main=duel?'scenes/duel.tscn':flatScene;
   const sliders=[...lab.querySelectorAll('input[type=range]')];
   let saved={};
   try { saved=JSON.parse(localStorage.getItem(storageKey)) || {}; } catch {}
@@ -29,14 +36,14 @@ export function mountEffectsPreview(app,lesson,sources) {
     if(Number.isFinite(value))slider.value=String(value);
   }
   const settings=()=>Object.fromEntries(sliders.map(s=>[s.dataset.effect,s.valueAsNumber]));
-  const makeScene=(files,values)=>{
-    for(const f of fields)setSceneProperty(files,scene,f.node,f.property,values[f.property]);
+  const makeScene=(files,values,path)=>{
+    for(const f of fields)setSceneProperty(files,path,f.node,f.property,values[f.property]);
   };
   function display(){
     const values=settings();
     for(const slider of sliders)slider.parentElement.querySelector('output').textContent=slider.value;
     const files={[scene]:new TextEncoder().encode(sources[scene])};
-    makeScene(files,values);
+    makeScene(files,values,scene);
     const lines=new TextDecoder().decode(files[scene]).split('\n');
     lab.querySelector('[data-effect-source]').textContent=fields.map(f=>{
       const node=lines.findIndex(line=>line.startsWith('[node name="'+f.node+'" '));
@@ -44,11 +51,24 @@ export function mountEffectsPreview(app,lesson,sources) {
       return f.node+' · line '+(index+1)+' · '+lines[index];
     }).join('\n');
   }
+  if(duel){
+    const calls=[
+      ['duel.gd','_confirm_hit(target)'],
+      ['duel_network.gd','hit_received.emit(target)'],
+      ['duel.gd','pilots[target].get_node("HitFX").play_hit()'],
+      ['duel_hit.gd','$Burst.restart(true)'],
+      ['duel_hit.gd','$AnimationPlayer.play(&"hit_flash")'],
+    ];
+    lab.querySelector('[data-hit-code]').textContent=calls.map(([file,call])=>{
+      const lines=sources['scripts/'+file].split('\n');
+      return 'scripts/'+file+' · line '+(lines.findIndex(line=>line.trim()===call)+1)+'\n'+call;
+    }).join('\n\n');
+  }
   const play=lab.querySelector('[data-effect-play]');
   let frame;
   function preview(){
     if(!lab.isConnected || !lab.open)return;
-    const request={kind:'hit-feedback',values:settings()};
+    const request={kind,values:settings()};
     if(frame){
       frame.contentWindow?.configureDirection?.(request);
       return;
@@ -56,7 +76,7 @@ export function mountEffectsPreview(app,lesson,sources) {
     frame=document.createElement('iframe');
     frame.title='Godot hit feedback practice';
     frame.src='./assets/godot-preview/index.html#'+encodeURIComponent(JSON.stringify(request));
-    frame.onload=()=>frame?.contentWindow?.configureDirection?.({kind:'hit-feedback',values:settings()});
+    frame.onload=()=>frame?.contentWindow?.configureDirection?.({kind,values:settings()});
     lab.querySelector('.live-stage').append(frame);
     play.textContent='Replay hit';
   }
@@ -86,8 +106,8 @@ export function mountEffectsPreview(app,lesson,sources) {
       const [zip,response]=await Promise.all([import('../vendor/fflate.js'),fetch('./downloads/battle-lab.zip')]);
       if(!response.ok)throw Error();
       const files=zip.unzipSync(new Uint8Array(await response.arrayBuffer()));
-      makeScene(files,values);
-      const guide=['# '+lesson.title,'Open scenes/hit_feedback.tscn. Press F6 to run and F8 to stop.',
+      for(const path of [flatScene,duelScene])makeScene(files,values,path);
+      const guide=['# '+lesson.title,'Open '+main+'. Press F6 to run and F8 to stop. Edit '+scene+' for these settings.',
         ...fields.map(f=>'- '+f.node+' → '+f.property+' = '+values[f.property])];
       for(const step of lesson.steps){
         guide.push('## '+step.title,...step.directions,'Check: '+step.expected, '!['+step.caption+'](workshop-images/'+step.image.split('/').pop()+'.webp)');
@@ -99,11 +119,11 @@ export function mountEffectsPreview(app,lesson,sources) {
       }));
       files['workshop-images/.gdignore']=new Uint8Array();
       files['MY-EFFECTS-LESSON.md']=zip.strToU8(guide.join('\n\n'));
-      const config=zip.strFromU8(files['project.godot']).replace(/^run\/main_scene=.*$/m,'run/main_scene="res://'+scene+'"');
+      const config=zip.strFromU8(files['project.godot']).replace(/^run\/main_scene=.*$/m,'run/main_scene="res://'+main+'"');
       files['project.godot']=zip.strToU8(config);
       const link=document.createElement('a');
       link.href=URL.createObjectURL(new Blob([zip.zipSync(files)],{type:'application/zip'}));
-      link.download='battle-lab-hit-feedback.zip';
+      link.download=duel?'battle-lab-duel-hit.zip':'battle-lab-hit-feedback.zip';
       link.click();
       setTimeout(()=>URL.revokeObjectURL(link.href),1000);
       status.textContent='Extract the ZIP, import project.godot, then press F5 to play your settings.';

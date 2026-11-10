@@ -1,3 +1,4 @@
+import {gamepadLesson} from './gamepad-guide.js';
 import {effectsModule} from './effects-module.js';
 import {matchLessons} from './match-flow-lessons.js';
 import {duelModule} from './duel-lessons.js';
@@ -135,7 +136,7 @@ export const modules = [
   },
   {
     title: 'Making Things Move',
-    description: 'Build a character, read keyboard input, and drive a two-clip animation blend.',
+    description: 'Build a character, read keyboard and gamepad input, and blend idle and walk.',
     lessons: [
       {
         id: 'character-body', title: 'Assemble the player and camera', minutes: 16,
@@ -175,6 +176,7 @@ export const modules = [
         walkthrough: [read('var facing := Vector3.FORWARD', 'The := operator assigns a value and infers its type. This member variable remembers the last direction across updates; Vector3.FORWARD is (0, 0, -1).'), read('func _physics_process(delta: float) -> void:', 'Godot calls this repeatedly at physics intervals. delta is the number of seconds covered by this update.'), read('Vector3(axes.x, 0, axes.y)', 'Place the input’s horizontal component in X, keep vertical world Y zero, and place the input’s second component in Z.'), read('velocity.y -= gravity * delta', 'Subtract this tick’s change in vertical speed. The shorthand -= means subtract from the current value. Multiplying acceleration by seconds produces a velocity change.'), read('move_and_slide()', 'CharacterBody3D consumes velocity in units per second and handles the time step internally. The final clampf calls keep the scout inside the floor edges.')],
         files: ['stages/motion.gd'],
       },
+      gamepadLesson,
       {
         id: 'animation-blend', title: 'Blend idle and walk', minutes: 16,
         concept: 'AnimationPlayer holds named clips. AnimationTree decides how to sample them. A BlendSpace1D lays clips along one number line: idle at 0 and walk at 1. The script reads horizontal speed and chooses a point on that line after movement runs.',

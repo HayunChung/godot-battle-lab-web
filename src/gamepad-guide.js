@@ -1,32 +1,57 @@
-import {screenshot} from './screenshot.js';
+const step = (id,title,image,caption,directions,expected) => ({
+  id,title,image,caption,directions,expected,body:directions.join('\n')
+});
 
-export function gamepadGuide(){
-  return `<div class="page guide-page">
-    <header class="page-title"><h1>Play with a gamepad</h1><p>Connect an Xbox-style controller, check what Godot receives, then use it in the arena or a duel.</p><a class="primary" href="./downloads/battle-lab.zip" download>Download the Godot project ↓</a></header>
-    <section class="guide-step"><div class="guide-index">1</div><div><h2>Connect one controller</h2>
-    <p>Pick one connection method. For USB, plug a compatible controller into your computer with a cable that carries data. A charge-only cable can light the controller without sending inputs.</p>
-    <p>For Bluetooth, use a model that supports it. On an Xbox Wireless Controller, turn it on with the Xbox button, then hold the small Pair button on its top edge until the Xbox light flashes rapidly. For another brand, use its pairing instructions.</p>
-    <ul><li><b>Windows 11</b> — Open Start → Settings → Bluetooth &amp; devices. Turn Bluetooth on. Under Devices, choose Add device → Bluetooth and select your controller.</li>
-    <li><b>Mac</b> — Open the Apple menu → System Settings → Bluetooth. Find the controller under Nearby Devices and click Connect.</li></ul>
-    <p>For wireless play, check that the controller is connected in your computer’s Bluetooth settings. Xbox Series X|S controllers support Bluetooth. Older Xbox models vary. <a href="https://support.microsoft.com/en-us/windows/hardware/add-a-hardware-device-to-a-windows-device">Windows device setup</a> · <a href="https://support.apple.com/en-us/111101">Compatible Xbox models</a> · <a href="https://support.apple.com/guide/games/connect-a-game-controller-devf8cec167c/mac">Mac controller setup</a></p></div></section>
-    <section class="guide-step"><div class="guide-index">2</div><div><h2>Watch Godot receive a button press</h2>
-    <ol><li>Extract the project ZIP. In the Godot 4.4.1 Project Manager, click <b>Import</b>, select the extracted <code>project.godot</code> and open it.</li>
-    <li>In the editor’s <b>FileSystem</b> dock, expand <b>scenes</b> and double-click <code>gamepad_check.tscn</code>. Press <b>F6</b> (Run Current Scene). Click inside the game window.</li>
-    <li>Find your controller’s name and device ID. Move the left stick right and back to center. Hold the left face button, marked <b>X</b> on Xbox. Check that the stick reading changes and the button press appears. Press <b>F8</b> to stop. On a laptop, you might need Fn with F6 or F8.</li></ol>
-    ${screenshot('./assets/gamepad/diagnostic.webp','Godot game · This capture shows the check scene waiting for a controller. A connected pad replaces this message with its name and live inputs.')}
-    <p>If the device list is empty, unplug and reconnect the USB cable or check the Bluetooth connection, then repeat this step. If the pad charges without appearing, try a known data cable. If the device appears with unexpected controls, check its firmware and repeat the button test. <a href="https://docs.godotengine.org/en/4.4/tutorials/inputs/controllers_gamepads_joysticks.html#troubleshooting">Godot controller troubleshooting</a></p></div></section>
-    <section class="guide-step"><div class="guide-index">3</div><div><h2>Play a solo round</h2>
-    <p>Double-click <code>scenes/arena.tscn</code>, press F6 and click the game window. Tilt the <b>left stick</b> to face the sentinel, then tap <b>X</b> to fire. Look for a pulse leaving your pilot and a drop in the enemy’s HP when it hits.</p>
-    <p>Release X, point the stick across the floor, and tap <b>B</b> to roll. Watch your pilot travel in that direction and spend stamina. When the round ends, press <b>Y</b> to restart. On an Xbox-style layout, X is the left face button, B is on the right and Y is at the top. Press F8 when finished.</p></div></section>
-    <section class="guide-step"><div class="guide-index">4</div><div><h2>Find the binding in Input Map</h2>
-    <p>Choose <b>Project → Project Settings → Input Map</b>. Click the disclosure arrow beside <code>fire</code>. The Space key and the joypad’s X button both trigger the same action in the solo arena.</p>
-    ${screenshot('./assets/gamepad/input-map.webp','Godot 4.4.1 · Expand fire to inspect its keyboard and controller events. The + on the right adds a binding.')}
-    <p>Try an edit in your copy. Click <b>+</b> on the <code>fire</code> row, press a spare shoulder button and click OK. Close Project Settings and run <code>arena.tscn</code> with F6. Fire once with X and once with the extra button. To undo, stop the game, reopen Input Map, expand <code>fire</code> and remove only the new shoulder-button entry.</p>
-    <p>A <b>deadzone</b> ignores small stick movements near the center. If the solo pilot creeps when the stick is released, increase the deadzone on the four <code>move_</code> actions a little, then run the scene again. <a href="https://docs.godotengine.org/en/4.4/tutorials/inputs/controllers_gamepads_joysticks.html">Godot 4.4 controller input</a></p></div></section>
-    <section class="guide-step"><div class="guide-index">5</div><div><h2>Choose who controls each pilot</h2>
-    <p>Open <code>scenes/duel.tscn</code> and press F6. Use the mouse or keyboard for the mode and ready buttons. The duel reads movement from the left stick and shoots with the left face button (Xbox X).</p>
-    <ul><li><b>Against the bot</b> — Choose Practice against a bot. Use the first local pad to move and fire.</li>
-    <li><b>One computer</b> — Connect the pads before choosing Local PvP. With one pad, P1 uses WASD and Space and the pad controls P2. With two pads, the first controls P1 and the second controls P2. Move each stick separately and check its pilot before firing.</li>
-    <li><b>Two computers</b> — Connect one pad to each computer. Choose Network PvP on both, host on one and join from the other. Both click Ready, wait for their local load and click Enter arena. After the countdown, each person uses their own stick and X. Ask your friend to confirm which pilot moved. <a href="#/lesson/duel-network">Follow the host and guest steps</a></li></ul>
-    </div></section></div>`;
-}
+export const gamepadReading = {
+  file:'res://scripts/gamepad_check.gd',
+  lines:[
+    {code:'var devices := Input.get_connected_joypads()',meaning:'Ask Godot for the device IDs of connected controllers. The diagnostic checks this list on every frame, so you can leave it running while you reconnect.'},
+    {code:'if devices.is_empty():',meaning:'When the list has no IDs, display the connection instructions. This gives you a useful checkpoint even if you are completing the lesson with a keyboard.'},
+    {code:'if Input.is_joy_button_pressed(device, index):',meaning:'Read one button on one device. The diagnostic adds its Xbox-style label to that device’s row while the button is held.'}
+  ]
+};
+
+export const gamepadLesson = {
+  id:'gamepad-setup',title:'Set up and test a gamepad',minutes:14,
+  concept:'The same action can have several inputs. In the solo arena, pressing Space or the left face button fires a pulse. First confirm that Godot sees the device, then inspect the binding that connects the physical button to the action. If you have a keyboard only, follow the keyboard checkpoints through this lesson.',
+  analogy:'Blender can run the same command from a menu or a shortcut. A Godot action likewise lets a keyboard key and a controller button ask the game to do the same thing.',
+  diagram:['Connect the device → check its ID','Input Map → bind an action','Run a round → observe the result'],
+  steps:[
+    step('connect','Connect a controller and open the reference project','setup/project-manager','Godot Project Manager · Choose Import to open the complete reference game for this input test.',[
+      'For USB, plug the controller into a data-capable cable. For Bluetooth, use a controller model that supports it. On an Xbox Wireless Controller, power it on, then hold the Pair button on its top edge until the Xbox light flashes rapidly.',
+      'Windows 11: open Start → Settings → Bluetooth & devices → Add device → Bluetooth. macOS: open Apple menu → System Settings → Bluetooth, find the pad under Nearby Devices and click Connect. For another controller brand, follow its pairing instructions.',
+      'Download the project ZIP from this lesson and extract it. In Godot 4.4.1 Project Manager click Import and select its project.godot. Use the finished reference project for this test. Keyboard only? Open the same project and continue to the disconnected-device check.'
+    ],'Godot opens the reference game. FileSystem contains scenes/gamepad_check.tscn. A Bluetooth user also sees the controller connected in system settings.'),
+    step('diagnostic','Read the device, stick and buttons','gamepad/diagnostic','Godot input diagnostic · This capture shows the waiting state. A connected pad adds a device row and live input values.',[
+      'In FileSystem expand scenes and double-click gamepad_check.tscn. Press F6 to run the current scene and click inside the game window. On a laptop hold Fn with the function key if needed.',
+      'Read your controller’s name and device ID. Tilt the left stick right, release it, then hold and release the left face button (Xbox X). Watch the X-axis value rise and return near zero, and watch the button label appear and disappear.',
+      'Keyboard only: read “No gamepad detected,” then press and release a keyboard key. Confirm the diagnostic still reports no controller. Press F8 to stop before editing the project.'
+    ],'With a pad, the displayed row changes as you move and press. With a keyboard only, you can identify the expected no-device state.'),
+    step('binding','Inspect and try a second fire binding','gamepad/input-map','Godot Project Settings · Expand fire to compare its key and joypad events. Use the + on that row to add an input.',[
+      'Open Project → Project Settings → Input Map and expand fire. Find the Space key and Joypad Button 2, the Xbox X position. Each event activates the same action in the solo arena.',
+      'In this reference copy click + beside fire. Press a spare shoulder button, or the J key for the keyboard exercise, then click OK. Close Project Settings. In FileSystem open scenes/arena.tscn, press F6 and click the game. Try the original and the new binding separately, waiting between shots.',
+      'Press F8. Reopen the fire row and remove the binding you just added. Keep both original events. If your pilot creeps when the stick is at rest, try increasing the deadzone on each of the four move_ actions slightly and test the same scene again.'
+    ],'Both tested bindings can fire a pulse. After cleanup, expanding fire shows the supplied keyboard and joypad bindings.'),
+    step('arena','Run a solo round and return to your work','course-shots/arena-fire','Godot game · Aim the scout and fire. A pulse in flight confirms the fire action before any resulting HP change.',[
+      'Run scenes/arena.tscn with F6. Point the left stick to move and face the sentinel, then press Xbox X to fire. Tap B to roll and watch the stamina drop. When the round ends, press Y to restart. On an Xbox-style layout X is the left face button, B the right and Y the top.',
+      'Keyboard path: use WASD to move and aim, Space to fire, Shift to roll and R after the round ends. Confirm the same movement, pulse, stamina change and fresh starting health. Press F8 to stop.',
+      'For the next movement lesson, reopen Battle Lab Work, the project where you built Player and its movement script. Module 7 returns to this reference game to assign controllers in local and network duels.'
+    ],'A new round begins with fresh HP. You know which input runs each solo action and which project to open for animation blending.')
+  ],
+  files:['scenes/gamepad_check.tscn','scripts/gamepad_check.gd','scripts/gamepad.gd'],
+  walkthrough:gamepadReading.lines.map(({code,meaning})=>({line:code,explanation:meaning})),
+  question:'Godot shows the pad’s name and the X button responds in the diagnostic. Where can you check whether that button fires in the solo arena?',
+  options:['Scene → New Scene','Project Settings → Input Map → fire','The animation clip list'],answer:1,
+  feedback:'The diagnostic reads raw inputs. The fire action in Input Map connects that button to the solo arena’s firing code.',
+  troubleshooting:[
+    {symptom:'USB powers the controller but the diagnostic stays empty.',fix:'Try a USB data cable and another port. For Bluetooth, check that this controller model supports Bluetooth, finish pairing in the operating system, and leave the diagnostic open while reconnecting.'},
+    {symptom:'The diagnostic sees my pad but a face button has an unexpected label.',fix:'This lesson uses Xbox-style positions. Test the physical left, right and top buttons one at a time. Check the labels in the diagnostic and add the reported button to the solo action in Input Map if needed.'},
+    {symptom:'I can move the menu highlight but cannot control the pilot.',fix:'Use the mouse or keyboard to choose a gameplay mode. Click the running game window and move the stick after the round starts. In a network match, both pilots must accept the ready check and enter the arena.'}
+  ],
+  references:[
+    {label:'Godot 4.4 controller input and troubleshooting',url:'https://docs.godotengine.org/en/4.4/tutorials/inputs/controllers_gamepads_joysticks.html'},
+    {label:'Windows device setup',url:'https://support.microsoft.com/en-us/windows/hardware/add-a-hardware-device-to-a-windows-device'},
+    {label:'Compatible Xbox models for Apple devices',url:'https://support.apple.com/en-us/111101'},
+    {label:'Mac controller setup',url:'https://support.apple.com/guide/games/connect-a-game-controller-devf8cec167c/mac'}
+  ]
+};

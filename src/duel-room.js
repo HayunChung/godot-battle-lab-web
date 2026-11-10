@@ -1,3 +1,4 @@
+import {sharedPhotoDialog,mountSharedPhoto} from './shared-photo-viewer.js';
 import {padHistoryPanel,mountPadHistory} from './room-pad-history.js';
 import {padTests,expectedPadResult,padResultLabel} from './pad-results.js';
 import {testHistoryPanel,mountTestHistory} from './duel-test-history.js';
@@ -59,7 +60,7 @@ export async function createRoom(button){
 }
 
 export function roomPage(){
-  return `<div class="page duel-room"><a class="lib-link" href="#/lesson/duel-pair-checklist">← Two-computer duel lesson</a><h1>Shared duel checklist</h1>
+  return `<div class="page duel-room">${sharedPhotoDialog}<a class="lib-link" href="#/lesson/duel-pair-checklist">← Two-computer duel lesson</a><h1>Shared duel checklist</h1>
   <section class="panel"><h2>Invite your friend</h2><p>Send this room link to your friend. Open the Godot project on both computers and choose one role each below.</p>
   <label>Room link <input data-room-link readonly></label> <button class="secondary" data-room-copy>Copy room link</button>
   <p><a class="lib-link" href="./downloads/battle-lab.zip" download>Download the Godot project ↓</a></p>
@@ -84,6 +85,7 @@ export function mountRoom(root,room,linkedStep){
   const call=(action,fields={})=>request({room,ticket,action,...fields});
   const photoUrl=(step,r,id)=>endpoint.replace('/duel-room','/duel-photo')+'/'+[room,r,step,id].map(encodeURIComponent).join('/');
   const {draw:drawHistory,archive}=mountTestHistory(root,call,photoUrl);
+  const photoViewer=mountSharedPhoto(root,photoUrl,change,()=>latest);
   const drawEpisodes=mountPadHistory(archive,photoUrl);
   const resetFiles=new Map();
   for(const form of root.querySelectorAll('[data-note-form]'))resetFiles.set(form,mountFilePicker(form.querySelector('[data-photo-input]')));
@@ -91,6 +93,7 @@ export function mountRoom(root,room,linkedStep){
   let exporting=false;
   function paint(){
     if(!latest||!active)return;
+    photoViewer.update(latest);
     root.querySelector('[data-report-pdf]').disabled=exporting||busy;
     for(const b of root.querySelectorAll('[data-claim]')){
       const role=b.dataset.claim;
@@ -275,6 +278,13 @@ export function mountRoom(root,room,linkedStep){
     }
     const timeline=e.target.closest('[data-pad-history]');
     if(timeline){
+      const photoButton=e.target.closest('[data-enlarge]');
+      if(photoButton){
+        e.stopPropagation();
+        const card=photoButton.closest('[data-evidence-photo]');
+        if(card && !busy)await photoViewer.open(card,timeline.dataset.padHistory);
+        return;
+      }
       const attempt=e.target.closest('[data-episode-test]'),start=e.target.closest('[data-retry-pad]');
       const toggle=e.target.closest('[data-history-mode]');
       if(toggle || attempt || e.target.closest('[data-reload-episodes]')){

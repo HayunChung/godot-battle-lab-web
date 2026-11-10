@@ -53,7 +53,7 @@ export function mountPadHistory(archive,photoUrl){
       mode.disabled=busy||!latest.role;
       mode.setAttribute('aria-pressed',String(!!browsing?.together));
       mode.textContent='View together: '+(browsing?.together?'On':'Off');
-      panel.querySelector('[data-browse-hint]').textContent=browsing?.together?'Choosing a test opens its evidence for both players.':'Each player can compare a different test.';
+      panel.querySelector('[data-browse-hint]').textContent=browsing?.together?'Choose a test or enlarge a screenshot to view it together. Select a spot on the photo to show your friend.':'Each player can compare a different test.';
       roles.forEach((r,i)=>{
         const otherStep=latest.views[r],otherPick=browsing?.picks[r]?.[otherStep];
         const prefix=online[i]?'Viewing ':'Last viewed ';
@@ -90,7 +90,7 @@ export function mountPadHistory(archive,photoUrl){
         const cards=roles.map(r=>{
           const entry=data[r],value=padValue(step,entry,r,phase);
           const label=names[r]+' · Test '+selected;
-          return `<div><b>${names[r]}</b><p>Pad: ${typeof value==='boolean'?padResultLabel(id,value):'Unrecorded'}</p>
+          return `<div data-photo-side="${r}" data-evidence-photo="${esc(entry.photo||'')}" data-test-number="${selected}"><b>${names[r]}</b><p>Pad: ${typeof value==='boolean'?padResultLabel(id,value):'Unrecorded'}</p>
             ${entry.photo?screenshot(photoUrl(id,r,entry.photo),label,true):'<p>No screenshot shared</p>'}
             <p class="room-observation">${esc(entry.text||'No note shared')}</p></div>`;
         }).join('');

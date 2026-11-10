@@ -1,3 +1,4 @@
+import {padHistoryPanel,mountPadHistory} from './room-pad-history.js';
 import {padTests,expectedPadResult,padResultLabel} from './pad-results.js';
 import {testHistoryPanel,mountTestHistory} from './duel-test-history.js';
 import {filePicker,mountFilePicker} from './file-picker.js';
@@ -67,7 +68,7 @@ export function roomPage(){
   <section class="panel"><h2>Run the duel together</h2><div class="room-presence">${roles.map(r=>`<p><strong>${names[r]}</strong> <span data-viewing="${r}">Waiting for player</span></p>`).join('')}</div><p>Open a step to compare screens. When both players are on that step and confirm it, both checklists open the next one.</p><button class="secondary" data-review-mode disabled>Retest open steps together</button><p data-review-status role="status"></p><p data-room-total>0 of ${lesson.steps.length} checkpoints confirmed by both players</p>
   ${lesson.steps.map((step,i)=>`<details class="room-step" data-step-id="${step.id}" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small> <small data-readers></small></summary>
   <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${Object.hasOwn(padTests,step.id)?'My pad: '+padResultLabel(step.id,expectedPadResult(step.id,role)):(role==='host'?'Host':'Guest')+' confirmed'}</label></div>`).join('')}</div>
-  <section data-comparison="${step.id}" hidden><h3>Compare Godot screens · <span data-current-test></span></h3><div class="room-screens">${roles.map(role=>`<div><b>${names[role]}</b><div data-room-photo="${role}">No screenshot shared</div><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p><p data-role-retest="${role}"></p></div>`).join('')}</div><p data-resolution role="status"></p><p data-first-resolved hidden></p><div data-retest-actions hidden><button class="secondary" data-retest="different">Still different</button> <button class="secondary" data-retest="resolved">Resolved on my screen</button></div>${testHistoryPanel(step.id)}</section>
+  <section data-comparison="${step.id}" hidden><h3>Compare Godot screens · <span data-current-test></span></h3><div class="room-screens">${roles.map(role=>`<div><b>${names[role]}</b><div data-room-photo="${role}">No screenshot shared</div><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p><p data-role-retest="${role}"></p></div>`).join('')}</div><p data-resolution role="status"></p><p data-first-resolved hidden></p>${Object.hasOwn(padTests,step.id)?padHistoryPanel(step.id):''}<div data-retest-actions hidden><button class="secondary" data-retest="different">Still different</button> <button class="secondary" data-retest="resolved">Resolved on my screen</button></div>${testHistoryPanel(step.id)}</section>
   ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}${stepHelp(step.help)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden>${Object.hasOwn(padTests,step.id)?`<label>What happened on your pad?<select data-pad-result><option value="">Choose an observation</option><option value="yes">${padResultLabel(step.id,true)}</option><option value="no">${padResultLabel(step.id,false)}</option></select></label>`:''}<label>What did you see in Godot?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label>${filePicker('Godot screenshot (PNG, JPEG or WebP, up to 20 MB)','image/png,image/jpeg,image/webp','data-photo-input')}<label data-number-picker hidden>Save to <select data-target-test></select></label><button class="secondary" data-save-note="${step.id}">Share difference</button><p>${Object.hasOwn(padTests,step.id)?'To keep a fix screenshot, select the next test under Save to. Both players can add evidence to that test before confirming the fix. ':''}Share a note, a screenshot, or both. Each player can share one report per test. Share your next capture in the next test to keep both versions. Both players use the same test numbers.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
 }
 
@@ -82,7 +83,8 @@ export function mountRoom(root,room,linkedStep){
   link.value=roomUrl;
   const call=(action,fields={})=>request({room,ticket,action,...fields});
   const photoUrl=(step,r,id)=>endpoint.replace('/duel-room','/duel-photo')+'/'+[room,r,step,id].map(encodeURIComponent).join('/');
-  const drawHistory=mountTestHistory(root,call,photoUrl);
+  const {draw:drawHistory,archive}=mountTestHistory(root,call,photoUrl);
+  const drawEpisodes=mountPadHistory(archive,photoUrl);
   const resetFiles=new Map();
   for(const form of root.querySelectorAll('[data-note-form]'))resetFiles.set(form,mountFilePicker(form.querySelector('[data-photo-input]')));
   let displayed=null,queuedView=null;
@@ -117,7 +119,8 @@ export function mountRoom(root,room,linkedStep){
     const selected=landing || (latest.role && latest.views[latest.role]) || inspecting;
     if(inspecting && selected!==inspecting)inspecting=null;
     for(const panel of root.querySelectorAll('[data-step-id]')){
-      panel.hidden=!!latest.review && !isOpen(panel.dataset.stepId) && panel.dataset.stepId!==inspecting;
+      const keepRetest=latest.targeted?.step===panel.dataset.stepId && selected===panel.dataset.stepId;
+      panel.hidden=!!latest.review && !isOpen(panel.dataset.stepId) && panel.dataset.stepId!==inspecting && !keepRetest;
     }
     root.querySelector('[data-review-status]').textContent=latest.review?(openCount?openCount+' open checkpoints in this shared retest.':'No open issues remain. Download a fresh PDF for the joint fix results.'):'';
 
@@ -144,6 +147,8 @@ export function mountRoom(root,room,linkedStep){
       const first=section.querySelector('[data-first-resolved]'),n=latest.firstResolved?.[step];
       first.hidden=!n;first.textContent=n?'First resolved by both players in Test '+n:'';
       if(latest.lastResolved?.[step]>n)first.textContent+=' · Latest joint fix: Test '+latest.lastResolved[step];
+      const timeline=section.querySelector('[data-pad-history]');
+      if(timeline)void drawEpisodes(timeline,latest);
       void drawHistory(section.querySelector('[data-test-history]'),latest);
       for(const r of roles){
         const slot=section.querySelector('[data-room-photo="'+r+'"]'),id=latest.photos?.[r][step]||'';
@@ -265,6 +270,25 @@ export function mountRoom(root,room,linkedStep){
       if(busy){queuedView={step,advance:latest.advance};return;}
       if(step!==displayed)await change('view',{role:latest.role,step,advance:latest.advance});
       return;
+    }
+    const timeline=e.target.closest('[data-pad-history]');
+    if(timeline){
+      const attempt=e.target.closest('[data-episode-test]'),start=e.target.closest('[data-retry-pad]');
+      if(attempt || e.target.closest('[data-reload-episodes]')){
+        if(attempt)timeline.dataset.selected=attempt.dataset.episodeTest;
+        await drawEpisodes(timeline,latest,true);
+        if(attempt)timeline.querySelector('[data-episode-evidence] h5')?.focus();
+        return;
+      }
+      if(start && latest?.role && !busy){
+        const step=timeline.dataset.padHistory;
+        landing=inspecting=null;
+        if(await change('retry-pad',{role:latest.role,step,number:Number(start.dataset.attempt),
+          reportVersion:Number(start.dataset.version),failed:Number(start.dataset.retryPad)})){
+          timeline.closest('[data-comparison]').querySelector('[data-retest="resolved"]').focus();
+        }else timeline.querySelector('[data-episode-status]').textContent=status.textContent;
+        return;
+      }
     }
     const retry=e.target.closest('[data-history-retry]');
     if(retry){void drawHistory(retry.closest('[data-test-history]'),latest,true);return;}

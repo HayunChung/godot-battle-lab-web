@@ -17,7 +17,7 @@ export function mountTestHistory(root,call,photoUrl){
     if(!cache.has(key))cache.set(key,call('history',{step,number}).catch(e=>{cache.delete(key);throw e;}));
     return cache.get(key);
   }
-  return async function draw(panel,latest,force=false){
+  async function draw(panel,latest,force=false){
     const step=panel.dataset.testHistory,current=(latest.archivedCounts?.[step]||0)+1;
     panel.hidden=current<2;
     if(panel.hidden||!panel.closest('details').open)return;
@@ -46,5 +46,6 @@ export function mountTestHistory(root,call,photoUrl){
       if(panel.dataset.key!==key)return;
       grid.replaceChildren();status.textContent='Could not load this comparison.';retry.hidden=false;
     }
-  };
+  }
+  return {draw,archive};
 }

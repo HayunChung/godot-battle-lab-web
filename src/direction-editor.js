@@ -75,7 +75,7 @@ export const editorLessons = {
     refs:[['scripts/duel.gd','hit_tweens[slot].tween_property(',1]]
   },
   network: {
-    field:'Hit Cue Seconds', run:'Open Debug → Customize Run Instances and enable two instances. Press F5. In Network PvP host in one window and join 127.0.0.1 in the other. Hit P2 and watch the guest ring.',
+    field:'Hit Cue Seconds', run:'Open Debug → Customize Run Instances and enable two instances. Press F5. In Network PvP host in one window and join 127.0.0.1 in the other. Both click Ready, then Enter arena after loading. After the countdown, hit P2 and watch the guest ring.',
     effect:'A larger duration keeps the confirmed ring visible longer in both windows. Stop both and relaunch the saved project for each run.',
     why:'The guest copies the host’s HP and redraws. The same Duel tween runs on a confirmed drop in both modes.',
     refs:[['scripts/duel.gd','hp.assign(state.hp)',5],['scripts/duel.gd','hit_tweens[slot].tween_property(',1]]

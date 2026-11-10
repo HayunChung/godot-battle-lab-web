@@ -66,7 +66,7 @@ const shots = {
   ],
   'duel-network': [
     ['direction/snapshot','Double-click scripts/duel.gd. Find apply_snapshot and follow hp.assign(state.hp) down to _draw_round(). This is the guest’s confirmed HP update.'],
-    ['duel-guide/network-pair','Run the same saved project in two windows. In Duel modes → Network PvP choose Host in one. Join 127.0.0.1 in the other. Hit the amber pilot and watch both scores.'],
+    ['duel-guide/network-pair','Run the same saved project in two windows. In Duel modes → Network PvP choose Host in one. Join 127.0.0.1 in the other. Both click Ready, then Enter arena after loading. After the countdown, hit the amber pilot and watch both scores.'],
     ['direction/duel','Stop both copies. Select Duel in duel.tscn → Inspector → Hit Cue Seconds → enter 0.35 and save. Relaunch both copies before comparing the guest ring.']
   ]
 };

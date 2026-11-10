@@ -81,7 +81,7 @@ const workshops = {
   'duel-network': [
     'Keep host and guest hit cues in sync',
     'Open scripts/duel.gd. Follow one hit from tick_pair reducing hp to snapshot copying hp. The guest receives that value in apply_snapshot and calls _draw_round. Both windows run the ring cue from that same decrease.',
-    'Run two copies, host one and join from the other. Fire into empty space on the guest, then hit the host. Watch the target ring and score on both windows. A shot in flight has no confirmed damage yet.',
+    'Run two copies, host one and join from the other. Each pilot clicks Ready, waits for the load, and confirms Enter arena. After the countdown, fire into empty space on the guest, then hit the host. Watch the target ring and score on both windows. A shot in flight has no confirmed damage yet.',
     'Set Hit Cue Seconds to 0.35 in the saved scene and relaunch both copies. Compare one hit and one rematch. Repeated snapshots at the same HP should leave the ring at rest once its tween ends. Multiple hits between snapshots can appear as one pulse.', valorant
   ]
 };

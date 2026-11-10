@@ -3,6 +3,19 @@ function checkpoint(id, title, image, caption, host, guest, expected) {
   return {id, title, image, caption, host, guest, directions, body:directions.join('\n'), expected};
 }
 
+const pulseHelp={
+  title:'No pulse, the wrong pad pulsed, or the button did nothing?',
+  image:'rumble-preview/connections',
+  caption:'Godot Script editor · In rumble_settings.gd, _ready() connects the Test button to _test_vibration().',
+  directions:[
+    'On the affected computer, read the message under Test vibration. For “No local controller detected”, reconnect by USB and rerun scenes/gamepad_check.tscn with F6. Disconnect spare controllers and virtual pads: preview_local() uses the first local pad.',
+    'For “Strength is zero”, raise Strength to 0.75 and set Duration to 0.30 s. For “Test sent” with no movement, try the same Xbox pad over a USB data cable and repeat. Confirm only after someone feels the pulse.',
+    'If the button gives no message in your project, press F8. Open scenes/rumble_settings.tscn, click the script on RumbleSettings and find %Test.pressed.connect(_test_vibration) in _ready(). Compare with the screenshot. The handler calls receiver.preview_local() on this computer.',
+    'If the observer felt a pulse, leave both games on the mode menu without firing. Only the named tester clicks once. If the other pad still pulses, compare _test_vibration() with the reference project and check that your version calls preview_local() directly without an RPC.'
+  ]
+};
+const pulseTest='Open Vibration settings at the top right of the duel mode menu. Set Strength to 0.75 and Duration to 0.30 s. Say “testing now”, click Test vibration once and report whether you felt a pulse. Click Cancel when finished.';
+const observe='Hold your own controller still. Leave Test vibration untouched. When your friend says “testing now”, feel for any movement until they report the end of the pulse. Confirm only if your pad stayed quiet.';
 export const pairChecklistReading = {
   file:'res://scripts/network_series.gd',
   lines:[
@@ -14,14 +27,23 @@ export const pairChecklistReading = {
 };
 
 export const pairChecklistLesson = {
-  id:'duel-pair-checklist', title:'Two-computer duel checklist', minutes:15,
+  id:'duel-pair-checklist', title:'Two-computer duel checklist', minutes:20,
   concept:'Work down this list together in the Godot game. One friend hosts as P1 and the other joins as P2. Read the health and round scores aloud after each shot. After comparing results aloud, tick Host confirmed and Guest confirmed in your own checklist. If a physical pad check is pending, leave its box empty and choose the next step above.',
   analogy:'HP counts how many hits a pilot can take this round. Wins counts how many rounds that player has won in this match.',
   diagram:['Both accept and load → countdown','Compare a miss and two hits → finish two rounds','Both rematch → verify the fresh arena'],
   steps:[
+    {...checkpoint('detect-pads','Detect both Xbox controllers in Godot','gamepad/diagnostic','Godot controller diagnostic · This screenshot shows the disconnected state. When Godot sees a pad, its name, device ID and live input replace this message.',
+      'On your computer, connect one Xbox pad. Download and extract the reference project from this room, then click Import in Godot Project Manager and open project.godot. In FileSystem double-click scenes/gamepad_check.tscn and press F6. Tilt the left stick and hold then release Xbox X.',
+      'On your own computer, connect your Xbox pad and import the same extracted project. Run scenes/gamepad_check.tscn with F6. Tilt your left stick and hold then release Xbox X. Tell the host which device name and button appeared.',
+      'Each person sees a device row on their own screen, changing stick values and X while the button is held. Both press F8, open scenes/duel.tscn and press F6. Stay on the mode menu for the next two checks.'),
+      help:{title:'My device row or button response is missing',image:'gamepad/diagnostic',caption:'Godot gamepad_check.tscn · “No gamepad detected” means the running scene sees no controller.',
+        directions:['On the affected computer, check the window is running gamepad_check.tscn. Click the game window. If it says “No gamepad detected”, reconnect with a USB data cable or finish Bluetooth pairing in system settings. Leave the scene running while reconnecting.',
+          'Disconnect spare pads. Move the stick and hold X again while looking at the device row. In the shared room, leave your confirmation empty and use Share difference to record your device name or the message and a screenshot. Retest on this same step.']}},
+    {...checkpoint('host-pad-test','Test the host pad while the guest observes','rumble-preview/trial','Godot Vibration settings · The screenshot shows the test values and the message when no local pad is connected.',pulseTest,observe,'Only the host feels one pulse. Host confirms feeling it; guest confirms their own pad stayed quiet.'),help:pulseHelp},
+    {...checkpoint('guest-pad-test','Test the guest pad while the host observes','rumble-preview/trial','Godot Vibration settings · On the guest computer use Test vibration with the same strength and duration.',observe,pulseTest,'Only the guest feels one pulse. Guest confirms feeling it; host confirms their own pad stayed quiet. If either observation differs, share it here before starting the match.'),help:pulseHelp},
     checkpoint('connect','Open the same duel and connect','duel-guide/internet-address','Guest address field in the running Godot game. Replace the pictured example with the host’s IP.',
-      'Both friends download and extract the same Godot project. In Godot 4.4.1 click Import, select project.godot, open scenes/duel.tscn and press F6. In Network PvP click Host a match. Read “Hosting on UDP 7000. Waiting for one guest.” On the same LAN, give your friend your LAN IP. From different homes, share your host PC’s numeric VPN IP, or the public IPv4 with UDP 7000 forwarded to your PC as in the internet-duel lesson.',
-      'Open the same scene with F6 on your own computer. Choose Network PvP, replace 127.0.0.1 with the host’s reachable numeric IP, then click Join host. For the VPN route, keep both computers connected to the shared VPN. Have the next checkpoint open before joining.',
+      'From the running duel mode menu, in Network PvP click Host a match. Read “Hosting on UDP 7000. Waiting for one guest.” On the same LAN, give your friend your LAN IP. From different homes, share your host PC’s numeric VPN IP, or the public IPv4 with UDP 7000 forwarded to your PC as in the internet-duel lesson.',
+      'In your running game choose Network PvP, replace 127.0.0.1 with the host’s reachable numeric IP, then click Join host. For the VPN route, keep both computers connected to the shared VPN. Have the next checkpoint open before joining.',
       'Both see Ready check. The role labels identify Host (P1) and Guest (P2).'),
     checkpoint('ready','Hold the ready gate open for one player','duel-guide/series-ready','Ready check on the host and guest. Compare the P1 and P2 marks under the timer.',
       'Click Ready first. Read the P1 checkmark and P2 waiting mark on your own screen.',

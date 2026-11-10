@@ -4,7 +4,7 @@ import {screenshotForUpload} from './room-photo.js';
 import {pairChecklistLesson as lesson} from './duel-pair-checklist.js';
 import {ORIGINAL,PUBLIC} from './device-sync.js';
 import {esc} from './ui.js';
-import {screenshot} from './screenshot.js';
+import {screenshot,stepHelp} from './screenshot.js';
 
 const roles=['host','guest'];
 const names={host:'Host · P1',guest:'Guest · P2'};
@@ -67,7 +67,7 @@ export function roomPage(){
   ${lesson.steps.map((step,i)=>`<details class="room-step" data-step-id="${step.id}" ${i===0?'open':''}><summary>${i+1}. ${esc(step.title)} <small data-marks="${step.id}"></small> <small data-readers></small></summary>
   <div class="pair-roles">${roles.map(role=>`<div><b>${names[role]}</b><p>${esc(step[role])}</p><label><input type="checkbox" data-room-role="${role}" data-id="${step.id}" disabled> ${role==='host'?'Host':'Guest'} confirmed</label></div>`).join('')}</div>
   <section data-comparison="${step.id}" hidden><h3>Compare Godot screens · <span data-current-test></span></h3><div class="room-screens">${roles.map(role=>`<div><b>${names[role]}</b><div data-room-photo="${role}">No screenshot shared</div><p class="room-observation" data-observation="${role}" data-id="${step.id}" hidden></p><p data-role-retest="${role}"></p></div>`).join('')}</div><p data-resolution role="status"></p><p data-first-resolved hidden></p><div data-retest-actions hidden><button class="secondary" data-retest="different">Still different</button> <button class="secondary" data-retest="resolved">Resolved on my screen</button></div>${testHistoryPanel(step.id)}</section>
-  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden><label>What did you see in Godot?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label>${filePicker('Godot screenshot (PNG, JPEG or WebP, up to 20 MB)','image/png,image/jpeg,image/webp','data-photo-input')}<label data-number-picker hidden>Save to <select data-target-test></select></label><button class="secondary" data-save-note="${step.id}">Share difference</button><p>Share a note, a screenshot, or both. Each player can share one report per test. Share your next capture in the next test to keep both versions. Both players use the same test numbers.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
+  ${screenshot('./assets/'+step.image+'.webp',step.caption,true)}${stepHelp(step.help)}<p><strong>What you should see</strong> · ${esc(step.expected)}</p><div data-note-form="${step.id}" hidden><label>What did you see in Godot?<textarea rows="2" maxlength="600" placeholder="Example: My P2 health stayed at 3/3 after the hit."></textarea></label>${filePicker('Godot screenshot (PNG, JPEG or WebP, up to 20 MB)','image/png,image/jpeg,image/webp','data-photo-input')}<label data-number-picker hidden>Save to <select data-target-test></select></label><button class="secondary" data-save-note="${step.id}">Share difference</button><p>Share a note, a screenshot, or both. Each player can share one report per test. Share your next capture in the next test to keep both versions. Both players use the same test numbers.</p><span data-note-status role="status"></span></div></details>`).join('')}</section></div>`;
 }
 
 export function mountRoom(root,room,linkedStep){

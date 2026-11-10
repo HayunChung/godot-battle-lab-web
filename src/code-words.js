@@ -1,8 +1,10 @@
+import {courseCodeWords} from './course-code-words.js';
 // Examples are snippets from the course or small variations for use in the same context.
 const word = (meaning, usage, example) => ({meaning, usage, example});
 
 export const codeWords = {
-  target: word("The slot number of the pilot that can be hit.", "Use the number inside square brackets to look up that pilot’s HP.", "hp[target] -= 1"),
+  ...courseCodeWords,
+  target: word("In duel hit code, the slot of the pilot receiving damage. In the result exercise, the number of round wins needed to finish.", "Use the number inside square brackets to look up that pilot’s HP.", "hp[target] -= 1"),
   owner_slot: word("The pilot number stored on a fired pulse.", "Use 0 for P1 and 1 for P2. Subtract it from one to find the opponent.", "var target := 1 - owner_slot"),
   positions: word("A list of the two pilots’ positions on the arena floor.", "Read slot zero for P1 or slot one for P2. Each entry has two floor coordinates.", "positions[0] - positions[1]"),
   in_range: word("A yes/no answer to the bot’s distance check.", "Use this result as a condition. A distance equal to the limit counts as close enough.", "var in_range := offset.length() <= bot_range"),
@@ -99,7 +101,7 @@ export const codeWords = {
   '$': word('Looks up a node by its path from the node running this script.', 'Put the child name after $. Match capitalization in the Scene dock and use a slash to reach a deeper child.', '$AnimationTree.set("parameters/blend_position", 1.0)'),
   '&': word('Immediately before quoted text, creates a StringName.', 'Use this spelling for names Godot looks up repeatedly, such as an animation. Elsewhere the same symbol can be a bitwise operator.', 'var clip := &"death"'),
   '"': word('Marks the beginning or end of literal text.', 'Put messages, action names and paths between matching quotation marks. Without quotes, Godot looks for an identifier.', 'print("Scout speed: ", speed)'),
-  '%': word('Formats placeholders in a string or gives an integer remainder.', 'After a format string, supply the values for its placeholders. Here %d displays a whole number.', 'print("Step %d" % 2)'),
+  '%': word('Before a node name, looks up a scene-unique node. Between expressions, formats a string or calculates an integer remainder.', 'After a format string, supply the values for its placeholders. Here %d displays a whole number.', 'print("Step %d" % 2)'),
   int: word('A whole-number type.', 'Use it for things you count in whole units, such as health points or shots.', 'var health: int = 3'),
   float: word('A number type that can hold fractions.', 'Use it for distances, speeds, seconds and proportions. Include a decimal point in a float literal.', 'var speed: float = 4.0'),
   bool: word('A type with two possible values, true and false.', 'Use it for switches and the results of comparisons.', 'var moving: bool = speed > 0.0'),
@@ -225,8 +227,8 @@ export const codeWords = {
   elapsed: word('The time already played, in seconds, for the current action.', 'Compare it with the chosen release time or use it to seek to an animation pose.', 'clips.seek(elapsed, true)'),
   attack: word('In the release-timing excerpt, the Animation resource for the attack clip.', 'Read its length property to keep release time within the clip’s duration.', 'var latest_release := attack.length'),
   clips: word('The AnimationPlayer used by the reaction controller.', 'Use it to apply a pose from the currently selected hit or death clip.', 'clips.seek(elapsed, true)'),
-  state: word('The reaction controller’s name for the current response.', 'Choose the death name at zero health and the hit name while health remains.', 'state = &"death" if value <= 0 else &"hit"'),
-  value: word('The argument supplied to the health-change handler in the reaction code.', 'Compare this remaining HP against zero before choosing a clip.', 'if value <= 0:\n    print("Play the fall")'),
+  state: word('The reaction controller uses state for the current response. Network code uses state for a snapshot of match data.', 'Choose the death name at zero health and the hit name while health remains.', 'state = &"death" if value <= 0 else &"hit"'),
+  value: word('The input to a handler. It can hold remaining HP, a slider setting or a ready flag, depending on which signal called the handler.', 'Compare this remaining HP against zero before choosing a clip.', 'if value <= 0:\n    print("Play the fall")'),
   attack_contact_fraction: word('The fraction of an enemy attack clip at which the blade can hit.', 'Multiply it by the clip duration to convert from a fraction to seconds.', 'var contact_time := attack_contact_fraction * attack_duration'),
   attack_duration: word('The full length of one enemy swing, measured in seconds.', 'Use it with the contact fraction. A 1-second swing at a 0.5 fraction checks for contact at 0.5 seconds.', 'var contact_time := attack_contact_fraction * attack_duration'),
   contact_time: word('The instant, in seconds from attack start, when the blade is checked.', 'Calculate it from the configured contact fraction and attack duration.', 'var contact_time := attack_contact_fraction * attack_duration'),
@@ -256,7 +258,7 @@ export const codeWords = {
   SAVE_PATH: word('The fixed file address used by the settings script.', 'Pass the same path to load and save so the next run finds the player’s previous choice.', 'const SAVE_PATH := "user://battle_lab_settings.cfg"'),
   config: word('The settings script’s ConfigFile object held in memory.', 'Use its methods to load the file, read or change values, and save your changes to disk.', 'config.set_value("display", "large_hud", true)'),
   toggle: word('The settings script’s reference to the Large HUD CheckButton.', 'Read or set button_pressed to match the saved choice and listen for toggled to detect a new choice.', 'toggle.button_pressed = true'),
-  enabled: word('The Boolean argument sent by the Large HUD toggle.', 'Save this argument in the display section when the switch changes.', 'config.set_value("display", "large_hud", enabled)'),
+  enabled: word('A Boolean switch. In display settings it controls the large HUD. In vibration settings it controls local hit feedback.', 'Save this argument in the display section when the switch changes.', 'config.set_value("display", "large_hud", enabled)'),
   error: word('The return code from an operation such as saving a file.', 'Compare this value with Godot’s OK constant. Show the success message only if the operation succeeded.', 'var error := config.save(SAVE_PATH)\nif error == OK:\n    print("Saved")'),
   OK: word('Godot’s success value for operations that return an error code.', 'Compare the return value from ConfigFile.save() with OK to check whether the write succeeded.', 'if config.save(SAVE_PATH) == OK:\n    print("Saved")')
 };

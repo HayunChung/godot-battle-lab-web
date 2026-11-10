@@ -1,3 +1,4 @@
+import {readableCode} from './word-reader.js';
 import {esc} from './ui.js';
 import {screenshot} from './screenshot.js';
 
@@ -87,5 +88,5 @@ export function effectsConnections(id) {
   const e = exercises[id];
   if (!e) return '';
   const link = e.next ? `<a class="lib-link" href="#/lesson/${e.next[0]}">${esc(e.next[1])} →</a>` : '';
-  return `<details class="trouble"><summary>Godot effects practice · ${esc(e.title)}</summary><div class="practice-help"><p>Work in your own extracted copy of the <a href="./downloads/battle-lab.zip" download>reference game</a>.</p>${screenshot('./assets/'+e.photo+'.webp', e.caption, true)}<ol>${e.steps.map((s,i)=>`<li>${esc(s)}${i === e.codeStep ? `<pre tabindex="0"><code>${esc(e.code)}</code></pre>` : ''}</li>`).join('')}</ol>${link}</div></details>`;
+  return `<details class="trouble"><summary>Godot effects practice · ${esc(e.title)}</summary><div class="practice-help"><p>Work in your own extracted copy of the <a href="./downloads/battle-lab.zip" download>reference game</a>.</p>${screenshot('./assets/'+e.photo+'.webp', e.caption, true)}<ol>${e.steps.map((s,i)=>`<li>${esc(s)}${i === e.codeStep ? `<pre tabindex="0"><code>${readableCode(e.code)}</code></pre>` : ''}</li>`).join('')}</ol>${link}</div></details>`;
 }

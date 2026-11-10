@@ -32,7 +32,10 @@ export function unpack(record,lessons,challengeIds) {
   for(const l of lessons){
     raw.active[l.id]=value('step/'+l.id);
     const answers={};
-    for(const s of l.steps)if(value('answer/'+l.id+'/'+s.id)===true)answers[s.id]=true;
+    for(const s of l.steps){
+      const keys=s.host?[s.id,s.id+'-host',s.id+'-guest']:[s.id];
+      for(const key of keys)answers[key]=value('answer/'+l.id+'/'+key);
+    }
     answers.quiz=record.completed.includes(l.id)?l.answer:value('answer/'+l.id+'/quiz');
     raw.responses[l.id]=answers;
   }

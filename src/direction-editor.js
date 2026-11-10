@@ -1,3 +1,4 @@
+import {readableCode} from './word-reader.js';
 import {parameters} from './direction-values.js';
 import {esc} from './ui.js';
 import {screenshot} from './screenshot.js';
@@ -123,8 +124,8 @@ export function lessonRecord(kind,value,source) {
 export function sourceView(record) {
   const {assignment,source,why}=record;
   return `<h5>Where this value goes</h5><p><code>res://${esc(source.file)} · line ${source.line}</code></p>
-  <p>Scene tree · ${esc(source.tree)}</p><pre><code>${esc(source.header)}\n<strong data-live-property>${esc(assignment)}</strong></code></pre>
-  <p>${esc(why)}</p>${source.reads.map(r=>`<p><code>res://${esc(r.file)} · line ${r.line} · ${esc(r.func)}()</code></p><pre><code>${esc(r.code)}</code></pre>`).join('')}`;
+  <p>Scene tree · ${esc(source.tree)}</p><pre><code>${readableCode(source.header,true)}\n<strong data-live-property>${readableCode(assignment,true)}</strong></code></pre>
+  <p>${esc(why)}</p>${source.reads.map(r=>`<p><code>res://${esc(r.file)} · line ${r.line} · ${esc(r.func)}()</code></p><pre><code>${readableCode(r.code)}</code></pre>`).join('')}`;
 }
 
 export function editorSteps(record) {

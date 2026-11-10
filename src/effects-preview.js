@@ -1,3 +1,4 @@
+import {readableCode} from './word-reader.js';
 import {setSceneProperty} from './direction-values.js';
 
 const flatScene = 'scenes/hit_feedback.tscn';
@@ -54,10 +55,10 @@ export function mountEffectsPreview(app,lesson,sources) {
     const files={[scene]:new TextEncoder().encode(sources[scene])};
     makeScene(files,values,scene);
     const lines=new TextDecoder().decode(files[scene]).split('\n');
-    lab.querySelector('[data-effect-source]').textContent=fields.map(f=>{
+    lab.querySelector('[data-effect-source]').innerHTML=fields.map(f=>{
       const node=lines.findIndex(line=>line.startsWith('[node name="'+f.node+'" '));
       const index=lines.findIndex((line,i)=>i>node && line.startsWith(f.property+' = '));
-      return f.node+' · line '+(index+1)+' · '+lines[index];
+      return f.node+' · line '+(index+1)+' · '+readableCode(lines[index],true);
     }).join('\n');
   }
   if(duel){
@@ -75,9 +76,9 @@ export function mountEffectsPreview(app,lesson,sources) {
       ['duel_hit.gd','$Burst.restart(true)'],
       ['duel_hit.gd','$AnimationPlayer.play(&"hit_flash")'],
     ];
-    lab.querySelector('[data-hit-code]').textContent=calls.map(([file,call])=>{
+    lab.querySelector('[data-hit-code]').innerHTML=calls.map(([file,call])=>{
       const lines=sources['scripts/'+file].split('\n');
-      return 'scripts/'+file+' · line '+(lines.findIndex(line=>line.trim()===call)+1)+'\n'+call;
+      return 'scripts/'+file+' · line '+(lines.findIndex(line=>line.trim()===call)+1)+'\n'+readableCode(call);
     }).join('\n\n');
   }
   const play=lab.querySelector('[data-effect-play]');

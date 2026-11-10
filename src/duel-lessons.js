@@ -1,3 +1,4 @@
+import {pairChecklistLesson,pairChecklistReading} from "./duel-pair-checklist.js";
 // Keep the instruction, its observed outcome and its screenshot together.
 const step = (id,title,directions,expected,image,caption) => ({
   id,title,directions,body:directions.join('\n'),expected,image,caption
@@ -122,5 +123,7 @@ export const duelModule = {
 
   ]
 };
+duelModule.lessons.push(pairChecklistLesson);
+duelReadings[pairChecklistLesson.id]=pairChecklistReading;
 for(const lesson of duelModule.lessons)lesson.walkthrough=duelReadings[lesson.id].lines.map(({code,meaning})=>({line:code,explanation:meaning}));
-export const duelShots=Object.fromEntries(duelModule.lessons.map(lesson=>[lesson.id,Object.fromEntries(lesson.steps.map(s=>[s.id,['duel-guide/'+s.image,s.caption]]))]));
+export const duelShots=Object.fromEntries(duelModule.lessons.map(lesson=>[lesson.id,Object.fromEntries(lesson.steps.map(s=>[s.id,[s.image.includes('/')?s.image:'duel-guide/'+s.image,s.caption]]))]));

@@ -108,7 +108,8 @@ export function mountRoom(root,room,linkedStep){
     for(const role of roles){
       const label=root.querySelector('[data-viewing="'+role+'"]');
       const recent=Date.now()-latest.seen[role]<45000;
-      label.textContent=!latest.occupied[role]?'Waiting for player':(recent?'Viewing ':'Last viewed ')+stepLabels.get(latest.views[role]);
+      const pick=latest.historyView?.picks[role]?.[latest.views[role]];
+      label.textContent=!latest.occupied[role]?'Waiting for player':(recent?'Viewing ':'Last viewed ')+stepLabels.get(latest.views[role])+(pick?' · Test '+pick:'');
     }
     const isOpen=step=>((latest.archivedCounts[step]||0)>0 || roles.some(r=>latest.notes[r][step]||latest.photos[r][step])) && !roles.every(r=>latest.retests[r][step]==='resolved');
     const openCount=lesson.steps.filter(s=>isOpen(s.id)).length;
@@ -120,7 +121,8 @@ export function mountRoom(root,room,linkedStep){
     if(inspecting && selected!==inspecting)inspecting=null;
     for(const panel of root.querySelectorAll('[data-step-id]')){
       const keepRetest=latest.targeted?.step===panel.dataset.stepId && selected===panel.dataset.stepId;
-      panel.hidden=!!latest.review && !isOpen(panel.dataset.stepId) && panel.dataset.stepId!==inspecting && !keepRetest;
+      const keepShared=latest.historyView?.together && latest.historyView.move?.step===panel.dataset.stepId && selected===panel.dataset.stepId;
+      panel.hidden=!!latest.review && !isOpen(panel.dataset.stepId) && panel.dataset.stepId!==inspecting && !keepRetest && !keepShared;
     }
     root.querySelector('[data-review-status]').textContent=latest.review?(openCount?openCount+' open checkpoints in this shared retest.':'No open issues remain. Download a fresh PDF for the joint fix results.'):'';
 
@@ -148,7 +150,7 @@ export function mountRoom(root,room,linkedStep){
       first.hidden=!n;first.textContent=n?'First resolved by both players in Test '+n:'';
       if(latest.lastResolved?.[step]>n)first.textContent+=' · Latest joint fix: Test '+latest.lastResolved[step];
       const timeline=section.querySelector('[data-pad-history]');
-      if(timeline)void drawEpisodes(timeline,latest);
+      if(timeline)void drawEpisodes(timeline,latest,false,busy);
       void drawHistory(section.querySelector('[data-test-history]'),latest);
       for(const r of roles){
         const slot=section.querySelector('[data-room-photo="'+r+'"]'),id=latest.photos?.[r][step]||'';
@@ -274,9 +276,18 @@ export function mountRoom(root,room,linkedStep){
     const timeline=e.target.closest('[data-pad-history]');
     if(timeline){
       const attempt=e.target.closest('[data-episode-test]'),start=e.target.closest('[data-retry-pad]');
-      if(attempt || e.target.closest('[data-reload-episodes]')){
-        if(attempt)timeline.dataset.selected=attempt.dataset.episodeTest;
-        await drawEpisodes(timeline,latest,true);
+      const toggle=e.target.closest('[data-history-mode]');
+      if(toggle || attempt || e.target.closest('[data-reload-episodes]')){
+        if((toggle||attempt) && latest?.role){
+          if(busy)return;
+          const fields={role:latest.role,step:timeline.dataset.padHistory,epoch:latest.historyView?.epoch||0,
+            advance:latest.advance,number:Number(attempt?.dataset.episodeTest||timeline.dataset.shown)};
+          if(toggle)fields.enabled=!latest.historyView?.together;
+          if(!await change(toggle?'history-mode':'history-pick',fields)){
+            timeline.querySelector('[data-episode-status]').textContent=status.textContent;return;
+          }
+        }else if(attempt)timeline.dataset.selected=attempt.dataset.episodeTest;
+        await drawEpisodes(timeline,latest,true,busy);
         if(attempt)timeline.querySelector('[data-episode-evidence] h5')?.focus();
         return;
       }

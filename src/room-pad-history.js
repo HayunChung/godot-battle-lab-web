@@ -1,4 +1,4 @@
-import {expectedPadResult,padResultLabel,padValue,recurrenceHistory} from './pad-results.js';
+import {padTests,expectedPadResult,padResultLabel,padValue,recurrenceHistory} from './pad-results.js';
 import {esc} from './ui.js';
 import {screenshot} from './screenshot.js';
 
@@ -7,13 +7,16 @@ const names={host:'Host · P1',guest:'Guest · P2'};
 
 export function padHistoryPanel(step){
   return `<section data-pad-history="${step}" class="pad-history"><h4>Pad recurrence history</h4>
-    <p data-episode-count role="status"></p><div data-episode-list></div>
+    <p data-episode-count role="status"></p>
+    <div data-browse-controls hidden><button class="secondary" data-history-mode aria-pressed="false">View together</button>
+    <p data-browse-hint></p><div class="room-screens" aria-label="Test selection" aria-live="polite">
+    ${roles.map(r=>`<p><b>${names[r]}</b> <span data-browsing="${r}"></span></p>`).join('')}</div></div><div data-episode-list></div>
     <div data-episode-evidence></div><p data-episode-status role="status"></p>
     <button class="secondary" data-reload-episodes hidden>Retry loading history</button></section>`;
 }
 
 export function mountPadHistory(archive,photoUrl){
-  return async function draw(panel,latest,force=false){
+  return async function draw(panel,latest,force=false,busy=false){
     if(!panel.closest('[data-step-id]').open)return;
     const id=panel.dataset.padHistory,current=(latest.archivedCounts[id]||0)+1;
     const step={id,current,firstResolved:latest.firstResolved[id],lastResolved:latest.lastResolved?.[id]};
@@ -21,7 +24,10 @@ export function mountPadHistory(archive,photoUrl){
       text:latest.notes[r][id],photo:latest.photos[r][id],result:latest.retests[r][id],
       padResult:latest.padResults?.[r]?.[id]??(latest.checks[r][id]?expectedPadResult(id,r):undefined)
     }]));
-    const key=JSON.stringify([step,live,panel.dataset.selected,latest.targeted,latest.role]);
+    const browsing=latest.historyView;
+    const here=roles.map(r=>latest.occupied[r] && latest.views[r]===id);
+    const online=roles.map(r=>Date.now()-latest.seen[r]<45000);
+    const key=JSON.stringify([step,live,panel.dataset.selected,latest.targeted,latest.role,browsing,here,online,latest.views,latest.occupied,busy]);
     if(!force && panel.dataset.key===key)return;
     panel.dataset.key=key;
     const list=panel.querySelector('[data-episode-list]'),detail=panel.querySelector('[data-episode-evidence]');
@@ -37,13 +43,31 @@ export function mountPadHistory(archive,photoUrl){
       const summary=episodes.length+' '+(episodes.length===1?'recurrence':'recurrences');
       if(count.textContent!==summary)count.textContent=summary;
       const stages=episodes.flatMap(e=>[e.passed,e.failed,e.fixed].filter(Boolean));
-      const selected=stages.includes(Number(panel.dataset.selected))?Number(panel.dataset.selected):episodes.at(-1)?.failed;
+      const fallback=episodes.at(-1)?.failed;
+      const chosen=r=>browsing?.picks[r]?.[id];
+      const visibleNumber=n=>stages.includes(n)?n:fallback;
+      const selected=visibleNumber(latest.role?chosen(latest.role):Number(panel.dataset.selected));
+      panel.dataset.shown=selected||'';
+      panel.querySelector('[data-browse-controls]').hidden=!episodes.length;
+      const mode=panel.querySelector('[data-history-mode]');
+      mode.disabled=busy||!latest.role;
+      mode.setAttribute('aria-pressed',String(!!browsing?.together));
+      mode.textContent='View together: '+(browsing?.together?'On':'Off');
+      panel.querySelector('[data-browse-hint]').textContent=browsing?.together?'Choosing a test opens its evidence for both players.':'Each player can compare a different test.';
+      roles.forEach((r,i)=>{
+        const otherStep=latest.views[r],otherPick=browsing?.picks[r]?.[otherStep];
+        const prefix=online[i]?'Viewing ':'Last viewed ';
+        const elsewhere=padTests[otherStep] && otherPick?prefix+padTests[otherStep]+' · Test '+otherPick:'At another step';
+        const msg=!latest.occupied[r]?'Waiting for player':here[i]?prefix+'Test '+visibleNumber(chosen(r)):elsewhere;
+        const label=panel.querySelector('[data-browsing="'+r+'"]');
+        if(episodes.length && label.textContent!==msg)label.textContent=msg;
+      });
       const active=latest.targeted?.step===id && latest.targeted.number===current;
       const negative=roles.some(r=>live[r].result==='different' ||
         (typeof live[r].padResult==='boolean' && live[r].padResult!==expectedPadResult(id,r)));
       const rows=episodes.map((e,i)=>{
         const buttons=[['Joint pass',e.passed],['Failed again',e.failed],['Joint fix',e.fixed]].map(([label,n])=>n?
-          `<button class="secondary" data-episode-test="${n}" aria-pressed="${selected===n}">${label} · Test ${n}</button>`:
+          `<button class="secondary" ${busy?'disabled':''} data-episode-test="${n}" aria-pressed="${selected===n}">${label} · Test ${n}</button>`:
           '<span>Joint fix pending</span>').join(' ');
         const changed=roles.map(r=>{
           const actual=padValue(step,attempts.get(e.failed)[r],r,'relapse'),normal=expectedPadResult(id,r);
@@ -72,6 +96,11 @@ export function mountPadHistory(archive,photoUrl){
         }).join('');
         const markup=`<h5 tabindex="-1">Test ${selected} · player observations</h5><div class="room-screens">${cards}</div>`;
         if(detail._markup!==markup){detail.innerHTML=markup;detail._markup=markup;}
+        const move=browsing?.move;
+        if(browsing?.together && move?.step===id && panel.dataset.move!==String(move.sequence)){
+          panel.dataset.move=String(move.sequence);
+          if(latest.role && move.role!==latest.role && move.number===selected)detail.scrollIntoView({block:'nearest'});
+        }
       }else{detail.replaceChildren();detail._markup='';}
       status.textContent='';
     }catch{

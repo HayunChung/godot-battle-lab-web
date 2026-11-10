@@ -15,7 +15,7 @@ const visualFields = [
 const storageKey = 'battle-lab.hit-feedback.v1';
 
 export function effectsPreview(id) {
-  const rumble=id==='duel-hit-rumble';
+  const rumble=['duel-hit-rumble','duel-vibration-settings'].includes(id);
   const duel=id==='duel-hit-effects' || rumble;
   const scene=rumble?matchScene:duel?duelScene:flatScene;
   const fields=rumble?rumbleFields:visualFields;
@@ -23,7 +23,7 @@ export function effectsPreview(id) {
   <p>${rumble?'Set the values to use on your controller in the downloaded Godot project.':duel?'Replay a pulse hitting P2 in the actual duel scene.':'Run the preview and click the hexagon, then the empty floor.'} ${rumble?'Use the two-computer exercise to feel the difference.':'Change one setting and replay the hit.'}</p>
   ${fields.map(f=>`<label class="tuner-control">${f.label} <output></output><input type="range" data-effect="${f.property}" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.initial}"></label>`).join('')}
   ${rumble?'':'<div class="live-stage"></div><button type="button" class="secondary" data-effect-play>Run Godot preview</button>'}
-  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${rumble?'Open <code>scripts/hit_rumble.gd</code> to see how the selected device uses these values.':duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
+  <p>In <code>res://${scene}</code>, select the node below to edit the same setting in the Inspector. ${rumble?'Open <code>scripts/hit_rumble.gd</code> to see how the selected device uses these defaults. In-game settings saved on this computer take priority.':duel?'The confirmed target in <code>scripts/duel.gd</code> selects the pilot’s <code>HitFX</code>. Give both players the same tuned ZIP.':'The hit signal in <code>scripts/hit_feedback.gd</code> calls <code>_play_hit()</code> to restart the particles and play the animation.'}</p>
   <pre data-effect-source></pre>${duel?'<p>In Godot’s Script editor, use Go to Line (Ctrl+L or ⌘L) to follow one confirmed hit.</p><pre data-hit-code></pre>':''}<button type="button" class="primary" data-effect-download>Download my effects project ↓</button>
   <p>The ZIP includes this lesson and its screenshots in <code>MY-EFFECTS-LESSON.md</code>.</p><p role="status"></p></div></details>`;
 }
@@ -31,7 +31,7 @@ export function effectsPreview(id) {
 export function mountEffectsPreview(app,lesson,sources) {
   const lab=app.querySelector('.effects-preview');
   if(!lab)return;
-  const rumble=lesson.id==='duel-hit-rumble';
+  const rumble=['duel-hit-rumble','duel-vibration-settings'].includes(lesson.id);
   const duel=lesson.id==='duel-hit-effects' || rumble;
   const fields=rumble?rumbleFields:visualFields;
   const kind=duel?'duel-hit':'hit-feedback';
@@ -125,7 +125,7 @@ export function mountEffectsPreview(app,lesson,sources) {
         allValues[f.property]=Number.isFinite(raw)?Math.min(f.max,Math.max(f.min,raw)):f.initial;
       }
       for(const path of [flatScene,duelScene])makeScene(files,allValues,path,visualFields);
-      makeScene(files,allValues,matchScene,rumbleFields);
+      for(const path of [matchScene,'scenes/settings.tscn'])makeScene(files,allValues,path,rumbleFields);
       const guide=['# '+lesson.title,'Open '+main+'. Press F6 to run and F8 to stop. Edit '+scene+' for these settings.',
         ...fields.map(f=>'- '+f.node+' → '+f.property+' = '+values[f.property])];
       for(const step of lesson.steps){

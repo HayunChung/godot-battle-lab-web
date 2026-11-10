@@ -1,3 +1,4 @@
+import {settingsLesson,settingsReading} from './duel-vibration-settings.js';
 import {rumbleLesson,rumbleReading} from './duel-rumble.js';
 import {duelEffectsLesson,duelEffectsReading} from './duel-effects-lesson.js';
 const scene = 'scenes/hit_feedback.tscn';
@@ -115,7 +116,8 @@ export const effectsModule = {
   ]
 };
 
-effectsModule.lessons.push(duelEffectsLesson,rumbleLesson);
+effectsModule.lessons.push(duelEffectsLesson,rumbleLesson,settingsLesson);
+effectsReadings[settingsLesson.id] = settingsReading;
 effectsReadings[rumbleLesson.id] = rumbleReading;
 effectsReadings[duelEffectsLesson.id] = duelEffectsReading;
 for(const lesson of effectsModule.lessons){

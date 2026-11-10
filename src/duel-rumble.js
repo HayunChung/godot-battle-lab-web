@@ -22,7 +22,7 @@ export const rumbleLesson={
     ],'HitRumble displays the saved strength. Switching between the pilots leaves their existing HitFX scenes intact.'),
     step('duration','Lengthen one pulse','duel-rumble/duration','Godot Inspector · Duration is in seconds. Compare 0.18 s with 0.35 s while keeping Strength fixed.',[
       'With HitRumble still selected, edit Duration from 0.18 to 0.35 and press Enter. Save duel.tscn. Keep Strength fixed while comparing the two lengths in the match.',
-      'For matching settings, give your friend the saved project or enter the same values on both computers. You can also choose a softer setting on your own computer.'
+      'For matching settings, give your friend the saved project or enter the same values on both computers. If you have already saved a preference in Vibration settings, change it there to feel the new pulse. Your saved values take priority over the Inspector defaults.'
     ],'The Inspector shows a 0.35-second pulse. Each computer uses its own saved values when its pilot is hit.'),
     step('route','Connect vibration to confirmed damage','duel-rumble/routing','Godot Script editor · Follow the target check and the local device ID to start_joy_vibration.',[
       'Using an older copy of the previous 3D duel? Copy scripts/hit_rumble.gd from the download into its scripts folder. Open duel.tscn, select Duel, click Add Child Node (+), choose Node and rename it HitRumble. Drag hit_rumble.gd from FileSystem onto HitRumble and save. In the supplied project this node and script are already attached.',

@@ -45,7 +45,7 @@ export const matchLessons=[
     diagram:['Request the arena → poll status','Loaded → Enter arena','Countdown → enable combat'],
     steps:[
       step('request','Start a background scene load','loading','Godot game · The loading panel owns a ProgressBar while the scene request is outstanding.',[
-        'Open scenes/match_flow.tscn. In Overlay → Center → Card → Column click Progress. Use a ProgressBar with Min Value 0 and Max Value 100. Leave it hidden in the room.',
+        'In the extracted reference project, double-click scenes/match_flow.tscn in FileSystem. In Overlay → Center → Card → Column click Progress. Use a ProgressBar with Min Value 0 and Max Value 100. Leave it hidden in the room.',
         'In scripts/match_flow.gd open _begin_load. Enter LOADING, clear the bar, show it, then call load_threaded_request. Keep Arena Path as a file path so the packed arena can be requested here. An immediate error takes the player to Retry.'],
         'Accept both players. The arena loads, then Arena loaded becomes visible. A cached arena can finish before you see a partial percentage.'),
       step('poll','Wire progress, failure and retry','loaded','Godot game · Enter arena appears only after the PackedScene is available.',[
@@ -65,7 +65,7 @@ export const matchLessons=[
     steps:[
       step('round','Capture the last combat tick','round','Godot game · The round panel shows each pilot’s final HP and the series score before the next round.',[
         'Open scripts/match_flow.gd → _finish_round. Wait for a nonempty duel.result during LIVE, then lock physics. Increase one win counter only when HP differs and append the result and HP to history.',
-        'Run scenes/match_flow.tscn with F6. After the countdown, keep both pilots facing each other. Hold Space for P1 alone until three hits land. On the panel read Round wins and the saved HP, then choose Next round.'],
+        'In the reference project, double-click scenes/match_flow.tscn and press F6. Click Request ready check, then P1 · Accept and P2 · Accept before the timer expires. Click Enter arena when loading finishes. After the countdown, leave both pilots facing each other at their starting positions. Hold Space for P1 alone until three hits land. On the panel read Round wins and the saved HP, then choose Next round.'],
         'The score increments once while the panel remains open. Next round refreshes HP to 3 / 3 and keeps the match score.'),
       step('draw','Handle a tied round','draw','Godot game · A draw appears in the history with both HP at zero; neither player gains a round win.',[
         'Test a fresh match with both pilots at their spawn points. Hold Space and Enter before the countdown ends so they fire together. Release when the draw appears.',

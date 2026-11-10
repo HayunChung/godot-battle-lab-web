@@ -45,15 +45,15 @@ export const gameFlow = {
       diagram: ['Button · player chooses Start', 'pressed · call _start_battle', 'SceneTree · load arena.tscn'],
       steps: [
         step("layout", "Arrange the lobby buttons", [
-          "Download and extract the reference project from the Resource library. In Godot, open scenes/lobby.tscn and switch to 2D.",
-          "To build the layout in a new scene, choose User Interface for a Control root. Add CenterContainer as Center, then VBoxContainer as VBox beneath it. Select Center and choose Layout → Anchors Preset → Full Rect to center the column in the window.",
-          "Add a Label and three Buttons under VBox. Name the buttons Start, Tutorial and Settings. Compare your tree with Center → VBox in the supplied lobby.",
-          "Select a Button and edit its Text in the Inspector. Press F6 to preview that label. Stop with F8 and restore the original text."
-        ], "Your edited label appears on the button. The surrounding controls keep their order in the column."),
+          "For this first pass open the reference project in Godot. In FileSystem double-click scenes/lobby.tscn and choose 2D above the viewport. Expand Center → VBox in the Scene dock and select Start.",
+          "In the Inspector change the button’s Text from Start battle to Launch. Save and press F6. Check the button says Launch, stop with F8, and restore Start battle.",
+          "To build your own version in the reference project, choose Scene → New Scene → User Interface. Name the root Lobby. Add CenterContainer as Center, then VBoxContainer as VBox beneath it. Select Center and choose Layout → Anchors Preset → Full Rect.",
+          "Under VBox add a Label and three Buttons. Give the buttons the node names Start, Tutorial and Settings and set their Text to Start battle, Tutorial and Settings. Save this scene separately as res://scenes/my_lobby.tscn."
+        ], "The preview shows Launch after your text edit. Once restored, the button reads Start battle again. In a new layout the three buttons stack vertically."),
         step("connect", "Follow a click into the arena", [
-          "Select Lobby and use Attach Script if building a new scene. Copy scripts/lobby.gd from Source files into the script, save it as scripts/lobby.gd and save the scene as scenes/lobby.tscn.",
+          "If you built my_lobby.tscn, drag the existing scripts/lobby.gd from FileSystem onto its Lobby root. Save and press F6. The script looks for the three button names you created under Center/VBox.",
           "In the supplied lobby, open the existing script instead. Find the connection to _start_battle, then find the function of that name. Read its scene path.",
-          "Run lobby.tscn with F6 and choose the battle button. Stop the game, run the lobby again, and try Tutorial and Settings."
+          "Double-click the lobby scene you want to test in FileSystem, press F6 and choose Start battle. Stop the game, run the lobby again, and try Tutorial and Settings."
         ], "The battle button opens the playable arena. The other buttons open the practice room and the settings screen."),
         step("install", "Make the lobby your starting scene", [
           "For your own project, download the tuned kit from Relay Arena. Extract its battle_lab folder beside your project.godot and let Godot import the files.",
